@@ -133,12 +133,6 @@ fun SetupScreen(vm: CuppingViewModel) {
                             CuppingMath.coffeePerCupG(draft.cupSizeMl)
                         ),
                     )
-                    StatLine(
-                        label = "Coffee to grind in total",
-                        value = CuppingMath.formatGrams(
-                            CuppingMath.coffeeTotalG(draft.cupSizeMl, draft.cupCount)
-                        ),
-                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         "Based on the SCA cupping ratio: 8.25 g of coffee per 150 ml of water " +

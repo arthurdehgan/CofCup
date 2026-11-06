@@ -7,7 +7,7 @@ A free, open-source Android app that guides you through a **coffee cupping sessi
 1. **Set up** — pick your cup size (ml) and how many coffees to cup (1–12).
    CofCup computes the amounts for you:
    - **Water to boil** = number of coffees × cup size
-   - **Coffee per cup** = SCA ratio, 8.25 g per 150 ml → *5.5 g per 100 ml*, rounded to **one decimal**
+   - **Coffee per cup** = SCA ratio, 8.25 g per 150 ml → *5.5 g per 100 ml*, rounded to **two decimals** (e.g. exactly `8.25 g` for a 150 ml cup)
    - **Total coffee to grind**
 2. **Name the coffees** — associate a **number** and a **colour** to each coffee and give it a name, so after the cupping you can identify every cup on the table at a glance.
 3. **Start cupping** — one big *Start* button (plus a small *Back* button). Once the timer runs, the screen shows:

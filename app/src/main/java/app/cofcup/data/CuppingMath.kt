@@ -16,18 +16,18 @@ object CuppingMath {
     /** Total water needed: number of cups x cup size. */
     fun waterTotalMl(cupSizeMl: Int, cupCount: Int): Int = cupSizeMl * cupCount
 
-    /** Coffee dose per cup, rounded to the first decimal. */
-    fun coffeePerCupG(cupSizeMl: Int): Double = round1(cupSizeMl * GRAMS_PER_ML)
+    /** Coffee dose per cup, rounded to two decimals. */
+    fun coffeePerCupG(cupSizeMl: Int): Double = round2(cupSizeMl * GRAMS_PER_ML)
 
-    /** Total coffee to grind for the whole session, rounded to the first decimal. */
+    /** Total coffee to grind for the whole session, rounded to two decimals. */
     fun coffeeTotalG(cupSizeMl: Int, cupCount: Int): Double =
-        round1(cupSizeMl * cupCount * GRAMS_PER_ML)
+        round2(cupSizeMl * cupCount * GRAMS_PER_ML)
 
-    /** Round to one decimal, half up — e.g. 8.25 g -> 8.3 g, 13.75 g -> 13.8 g. */
-    fun round1(value: Double): Double =
-        BigDecimal(value).setScale(1, RoundingMode.HALF_UP).toDouble()
+    /** Round to two decimals, half up — e.g. 8.25 g stays 8.25 g. */
+    fun round2(value: Double): Double =
+        BigDecimal(value).setScale(2, RoundingMode.HALF_UP).toDouble()
 
-    fun formatGrams(grams: Double): String = String.format(Locale.US, "%.1f g", grams)
+    fun formatGrams(grams: Double): String = String.format(Locale.US, "%.2f g", grams)
 
     fun formatWaterMl(ml: Int): String =
         if (ml >= 1000) String.format(Locale.US, "%.2f L (%d ml)", ml / 1000.0, ml) else "$ml ml"
