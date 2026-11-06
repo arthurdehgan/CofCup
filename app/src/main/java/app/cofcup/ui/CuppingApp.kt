@@ -1,5 +1,6 @@
 package app.cofcup.ui
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -11,20 +12,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun CuppingApp() {
     val vm: CuppingViewModel = viewModel()
+    val context = LocalContext.current
     val screen by vm.screen.collectAsState()
 
-    when (screen) {
+    when (val s = screen) {
         Screen.Setup -> SetupScreen(vm)
         Screen.LabelCoffees -> LabelScreen(vm)
         Screen.StartCheck -> StartCheckScreen(vm)
         Screen.LiveSession -> SessionScreen(vm)
         Screen.History -> HistoryScreen(vm)
-        is Screen.SessionDetail -> SessionDetailScreen(vm, screen.sessionId)
+        // `screen` is a delegated property, so copy it into a local for a stable smart cast.
+        is Screen.SessionDetail -> SessionDetailScreen(vm, s.sessionId)
     }
 
     BackHandler {
         if (!vm.handleBack()) {
-            (LocalContext.current as? Activity)?.finish()
+            (context as? Activity)?.finish()
         }
     }
 }

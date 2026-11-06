@@ -1,7 +1,8 @@
 package app.cofcup.data
 
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.Locale
-import kotlin.math.round
 
 /**
  * Cupping brew maths, based on the SCA cupping protocol:
@@ -22,7 +23,9 @@ object CuppingMath {
     fun coffeeTotalG(cupSizeMl: Int, cupCount: Int): Double =
         round1(cupSizeMl * cupCount * GRAMS_PER_ML)
 
-    fun round1(value: Double): Double = round(value * 10.0) / 10.0
+    /** Round to one decimal, half up — e.g. 8.25 g -> 8.3 g, 13.75 g -> 13.8 g. */
+    fun round1(value: Double): Double =
+        BigDecimal(value).setScale(1, RoundingMode.HALF_UP).toDouble()
 
     fun formatGrams(grams: Double): String = String.format(Locale.US, "%.1f g", grams)
 

@@ -2,4 +2,5 @@
 // so no separate kotlin-android plugin is needed.
 plugins {
     alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.compose.compiler) apply false
 }

@@ -1,5 +1,6 @@
 [versions]
 agp = "9.5.1"
+kotlin = "2.4.21"
 coreKtx = "1.19.1"
 activityCompose = "1.13.0"
 lifecycleViewmodelCompose = "2.11.0"
@@ -23,3 +24,5 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+# Required since Kotlin 2.0 whenever Compose is enabled; version tracks the Kotlin compiler.
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
