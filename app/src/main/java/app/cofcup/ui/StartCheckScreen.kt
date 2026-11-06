@@ -91,12 +91,6 @@ fun StartCheckScreen(vm: CuppingViewModel) {
                             CuppingMath.coffeePerCupG(plan.cupSizeMl)
                         ),
                     )
-                    StatLine(
-                        label = "Coffee to grind",
-                        value = CuppingMath.formatGrams(
-                            CuppingMath.coffeeTotalG(plan.cupSizeMl, plan.cupCount)
-                        ),
-                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         "Your cups on the table:",
