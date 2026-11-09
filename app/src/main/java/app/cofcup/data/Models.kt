@@ -20,7 +20,7 @@ data class CoffeeEntry(
     }
 }
 
-/** Twelve distinct colours, one per possible coffee, used to mark the cups. */
+/** Sixteen distinct colours, one per possible coffee, used to mark the cups. */
 object CupColors {
     val palette: List<Long> = listOf(
         0xFFFF5252L, // red
@@ -35,6 +35,10 @@ object CupColors {
         0xFF795548L, // brown
         0xFF90A4AEL, // grey
         0xFF26C6DAL, // cyan
+        0xFFFF7043L, // deep orange
+        0xFFAEEA00L, // lime
+        0xFF7E57C2L, // deep purple
+        0xFF455A64L, // dark slate
     )
 
     fun defaultCoffees(count: Int = palette.size): List<CoffeeEntry> =
@@ -73,9 +77,49 @@ data class CuppingPlan(
     val coffees: List<CoffeeEntry>,
 )
 
-/** A finished session stored in the history. */
+/** Lifecycle state of a stored session. Absent in JSON means done (legacy rows). */
+enum class SessionStatus { PLANNED, DONE }
+
+/** Whether the session is the user's own, or a joined copy of someone else's. */
+enum class SessionOrigin { OWN, JOINED }
+
+/**
+ * One rater's scores for one cup. Attribute ratings (aroma..aftertaste) are
+ * informational only; [overall] is strictly manual and never derived from them.
+ */
+data class CupRating(
+    /** Zero-based index of the cup, matching the plan's coffees position. */
+    val cup: Int,
+    /** Stable participant id; merges and re-submissions are idempotent per rater. */
+    val raterId: String,
+    /** Display name at save time; follows `my_name` when known. */
+    val rater: String = "",
+    val aroma: Int? = null,
+    val flavor: Int? = null,
+    val acidity: Int? = null,
+    val sweetness: Int? = null,
+    val mouthfeel: Int? = null,
+    val aftertaste: Int? = null,
+    val overall: Int? = null,
+    val notes: String = "",
+)
+
+/** A session stored in the history: planned set-ups, finished runs, joined copies. */
 data class SavedSession(
     val id: String,
     val createdAtMs: Long,
     val plan: CuppingPlan,
+    /** Absent in old rows; legacy JSON decodes as DONE. */
+    val status: SessionStatus = SessionStatus.DONE,
+    /** Blind tasting: identities are hidden until an explicit reveal. */
+    val blind: Boolean = false,
+    /** Epoch ms of a blind identity reveal; null = not revealed. */
+    val revealedAtMs: Long? = null,
+    val origin: SessionOrigin = SessionOrigin.OWN,
+    /** Host's display name; only set when origin is joined. */
+    val hostName: String = "",
+    /** Host's session id; empty for the user's own sessions. */
+    val sessionRef: String = "",
+    /** All participants' ratings keyed by raterId (see [CupRating.raterId]). */
+    val ratings: List<CupRating> = emptyList(),
 )

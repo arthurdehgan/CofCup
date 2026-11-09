@@ -27,6 +27,10 @@ fun CuppingApp() {
         is Screen.SessionDetail -> SessionDetailScreen(vm, s.sessionId)
     }
 
+    // Session shell: owns keep-screen-on, chime playback and the Done save for
+    // the whole live session, across every screen it may surface through.
+    SessionShell(vm)
+
     BackHandler {
         if (!vm.handleBack()) {
             (context as? Activity)?.finish()

@@ -305,7 +305,9 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         announcedStepStartSec = next.startSec
     }
 
-    /** Called when the "Done" step becomes current; saves the session once. */
+    /** Saves the session exactly once when the "Done" step becomes current.
+     *  Called from the ViewModel's ticker (via [refreshElapsed]) so the save
+     *  happens no matter which session screen is on top. */
     fun onCuppingComplete() {
         val session = _live.value ?: return
         if (session.finished) return
@@ -317,7 +319,6 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         )
         viewModelScope.launch { repository.save(saved) }
     }
-
     fun goHomeAfterSession() {
         resetLiveSession()
         _screen.value = Screen.Home
@@ -357,6 +358,12 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             .coerceAtLeast(0)
         if (elapsed != _elapsedMs.value) _elapsedMs.value = elapsed
         announceChimeFor(elapsed)
+        // Detect Done here in the ticker (an idempotent save-once): the session
+        // is saved even when another session screen (Ratings, Settings, …) is
+        // on top, since there is no screen watching for this moment anymore.
+        if (CuppingTimeline.stepAt(elapsed / 1000).isLast) {
+            onCuppingComplete()
+        }
     }
 
     /** Chimes when the timer's own passage enters a new step (never for skips). */

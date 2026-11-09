@@ -10,7 +10,10 @@
 - CI (`.github/workflows/build.yml`) installs JDK 17 (Temurin) + Android SDK + Gradle 9.6.0, then runs:
   - `gradle :app:assembleDebug`
   - `gradle :app:testDebugUnitTest`
-- Single unit test class: `gradle :app:testDebugUnitTest --tests "app.cofcup.CuppingMathTest"` (the only unit-test module is `app/src/test`).
+- Unit tests (pure JUnit, `app/src/test`, run all): `CuppingMathTest`,
+  `CupColorsTest`, `HistoryCodecTest`, `BlindRedactionTest`. A single class can be
+  selected with `--tests "app.cofcup.CuppingMathTest"`. `HistoryCodecTest` uses the
+  test-only `org.json:json` dependency (same API as the Android runtime).
 
 ## Toolchain quirks
 

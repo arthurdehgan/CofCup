@@ -108,7 +108,7 @@ fun SetupScreen(vm: CuppingViewModel) {
             StepperRow(
                 label = "Coffees to cup",
                 valueText = "${draft.cupCount}",
-                helperText = "Between 1 and 12",
+                helperText = "Between 1 and ${CuppingDraft.MAX_CUPS}",
                 onDecrement = { vm.setCups(draft.cupCount - 1) },
                 onIncrement = { vm.setCups(draft.cupCount + 1) },
                 decrementEnabled = draft.cupCount > CuppingDraft.MIN_CUPS,

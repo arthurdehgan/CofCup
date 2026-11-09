@@ -1,12 +1,5 @@
 package app.cofcup.ui
 
-import android.content.Context
-import android.media.AudioAttributes
-import android.media.SoundPool
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,20 +36,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.cofcup.R
 import app.cofcup.data.CuppingMath
 import app.cofcup.data.CuppingPlan
 import app.cofcup.data.CuppingStep
@@ -78,51 +66,11 @@ fun SessionScreen(vm: CuppingViewModel) {
         return
     }
 
-    // A cupping timer must stay visible: keep the screen on during the session.
-    val view = LocalView.current
-    DisposableEffect(Unit) {
-        view.keepScreenOn = true
-        onDispose { view.keepScreenOn = false }
-    }
-
-    // A soft chime and/or vibration whenever the timer advances to the next step.
-    // The ViewModel only emits for timer-driven advances, so "Skip step" stays silent.
-    val context = LocalContext.current
-    val soundPool = remember {
-        SoundPool.Builder()
-            .setMaxStreams(1)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build(),
-            )
-            .build()
-    }
-    val chimeId = remember(soundPool) { soundPool.load(context, R.raw.step_ding, 1) }
-    DisposableEffect(Unit) {
-        onDispose { soundPool.release() }
-    }
-    val soundOn by vm.soundOn.collectAsState()
-    val vibrateOn by vm.vibrateOn.collectAsState()
-    val vibrator = remember { context.stepVibrator() }
-    LaunchedEffect(soundPool, chimeId) {
-        vm.stepChimes.collect {
-            if (soundOn) soundPool.play(chimeId, 0.55f, 0.55f, 1, 0, 1f)
-            if (vibrateOn) vibrator?.vibrate(CHIME_VIBRATION)
-        }
-    }
-
     val running = session.startedAtMs != null
     val finished = session.finished
     val elapsedSec = elapsedMs / 1000
     val current = CuppingTimeline.stepAt(elapsedSec)
     val next = CuppingTimeline.nextStep(current)
-
-    // Auto-mark the session complete (and save it to history) when done is reached.
-    LaunchedEffect(current.startSec) {
-        if (running && current.isLast) vm.onCuppingComplete()
-    }
 
     Scaffold(
         topBar = {
@@ -464,16 +412,3 @@ private fun FinishedContent(vm: CuppingViewModel, plan: CuppingPlan) {
         }
     }
 }
-
-/** Quick double pulse — a "brrr brrr" — for step advances. */
-private val CHIME_VIBRATION: VibrationEffect =
-    VibrationEffect.createWaveform(longArrayOf(0, 60, 120, 60), -1)
-
-/** Default Vibrator, working across API levels (26+). */
-private fun Context.stepVibrator(): Vibrator? =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
-    } else {
-        @Suppress("DEPRECATION")
-        getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-    }
