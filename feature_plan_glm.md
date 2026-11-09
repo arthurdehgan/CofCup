@@ -25,8 +25,16 @@ in §1; the rest of the document is the single authoritative spec.
    Done — same row, same `id`, status flips.
 4. **Multi-participant** scores happen via **QR exchange only** for now (no live
    networking).
-5. **No online hosting, ever** — the QR encodes everything inside a `cofcup://` URI;
-   no web page, no backend, no link shortener.
+5. **No backend, ever; QR is an https App Link** (revised 2026-11-09, user
+   request; was "no online hosting at all, QR inside a `cofcup://` URI"). The QR
+   encodes an `https://…` **Android App Link** URL with the payload in its query
+   string. App installed → the external camera / Google Lens flow resolves it
+   straight into CofCup (full payload in the URL; still passes through the
+   `ImportPreview` confirm). App not installed → the link opens a **static**
+   landing page hosted on GitHub Pages (install link + "the cupping setup is
+   inside this link — install, then re-scan or tap the link again"). No web
+   backend, no processing, no link shortener; plain schemes keep working: every
+   incoming path (scanner, paste) still accepts the `cofcup://import?…` form.
 6. After the host has merged everyone's ratings, the host **can broadcast merged
    results** as a second QR round so participants get the full comparison on their
    own phones (reuses the identical merge path — included).
@@ -297,13 +305,17 @@ decodes untouched. No Room, no serialization plugin, no migration script.
 
 **No online hosting. The QR is the whole payload.**
 
-- QR content: `cofcup://import?v=1&d=<base64url payload>` with a `kind`
-  discriminator in the payload. Adopted from deepseek particularly — one intent
-  filter, one parser; `kind` values for this phase: `setup` (full, non-blind) and
-  `blind_setup`; `ratings`/`group_results` arrive in phase 4. Deepseek's single
-  `import` entry supersedes GLM's original `join`/`results` path split. With
-  compact keys, even 16-coffee setups stay inside scannable density (name cap
-  40 chars, cups max 16).
+- QR content: the QR encodes `https://<pages-host>/cofcup/i?v=1&d=<base64url
+  payload>` — an Android App Link (user decision 5, revised 2026-11-09), so an
+  external scanner resolves into the app or the static landing page. The URL
+  carries the same `d=` payload with a `kind` discriminator. Adopted from
+  deepseek — one parser, one validation path; `kind` values for this phase:
+  `setup` (full, non-blind) and `blind_setup`; `ratings`/`group_results` arrive
+  in phase 4. **Accepted incoming forms** (all equivalent once validated): the
+  https App Link URL above, `cofcup://import?v=1&d=…`, or a bare `d=` payload.
+  With compact keys, even 16-coffee setups stay inside scannable density (name
+  cap 40 chars, cups max 16); the https wrapper adds ~20 characters and changes
+  nothing about the ~2 KB guard.
 - New `data/ShareCodec.kt`: envelope encode/decode, deflate + base64url without
   padding, strict version/kind check, validation per deepseek §6.6 (bound checks,
   position uniqueness/range, name/notes caps, decompression-bomb cap 64 KB,
@@ -338,10 +350,10 @@ decodes untouched. No Room, no serialization plugin, no migration script.
     `uses-feature android:name="android.hardware.camera" android:required="false"`.
   - Permission denied / no camera → "Paste code" import stays fully functional
     (never gated behind the scanner).
-  - Decoded text validated by the same codec as deep links: accept a full
-    `cofcup://import?...` URI or a bare `d=` payload; non-CofCup codes are
-    ignored with a plain hint. Everything then funnels through the same
-    `ImportPreview` confirm (never auto-imported).
+  - Decoded text validated by the same codec as deep links: accept the https
+    App Link URL, a full `cofcup://import?...` URI, or a bare `d=` payload;
+    non-CofCup codes are ignored with a plain hint. Everything then funnels
+    through the same `ImportPreview` confirm (never auto-imported).
   - Reachable from Home/saved-setups surfaces for joining, and reused by the
     host's "Collect ratings" in phase 4.
   - Same queueing rule as deep links: a scan offered while a live session is
@@ -352,10 +364,25 @@ decodes untouched. No Room, no serialization plugin, no migration script.
   numbers and colors stay host-side; the joiner's blind copy shows positions
   only. Re-scanning the same host session id **replaces** the previous joined
   planned copy (idempotent, keyed on `sessionRef` + `status=planned`).
-- Manifest: one `VIEW` intent filter for `cofcup` (single `import` path), routed
-  through `MainActivity` (`onCreate`/`onNewIntent`) into the ViewModel without
-  parsing in the Activity. Cold start shows Home then the preview; warm start
-  works; portrait lock and other manifest intent stays as-is.
+- Manifest: one `VIEW` intent filter for `cofcup` (single `import` path) **and**
+  a second, `autoVerify` `VIEW` intent filter for the https App Link
+  (`https://<pages-host>/cofcup/i`), both routed through `MainActivity`
+  (`onCreate`/`onNewIntent`) into the ViewModel without parsing in the Activity.
+  Cold start shows Home then the preview; warm start works; portrait lock and
+  other manifest intent stays as-is.
+- **App Link wiring** (new, 2026-11-09):
+  - `assetlinks.json` served from `https://<pages-host>/.well-known/` carrying
+    the signing key's SHA-256 fingerprint (`gradle :app:signingReport` prints
+    it; debug and release differ — publish both while the app ships as debug
+    APK). Re-generate whenever the signing key changes.
+  - A **static** GitHub Pages landing page (separate small Pages repo or this
+    repo's Pages): "Get CofCup" + install link, plus "this link carries a
+    cupping setup — install the app, then re-scan the code or tap the link
+    again". Pure static files; nothing processes the query string server-side.
+  - **Dependency**: the redirect only exists if CofCup is publicly installable
+    (Play listing or a download link on the page). Until then the landing page
+    is a shell; the App-Link-opens-app side works regardless of distribution
+    channel as long as the fingerprint matches.
 
 ## 7. Phase 4 — QR ratings exchange + comparison (M)
 
@@ -410,6 +437,7 @@ happen through the confirmed preview — never auto-merged.
 | 3 | **Palette fix** | extend palette to 16 | extend to 16 (same) | **extend to 16** (keep `MAX_CUPS = 16`) — both plans agree |
 | 4 | **Blind label on planned rows** | "Blind setup · N cups" | hide title; neutral label (same) | **neutral label + lock icon**; no leak before reveal (both plans agree) |
 | 5 | **Post-reveal re-hide / re-blind reuse** | out of scope | explicit duplicate needed | **out of v1**; deepseek's duplicate-advice recorded for later |
+| 6 | **QR entry point** | `cofcup://` scheme only | — | **https App-Link QR + static GitHub Pages landing** (user request, 2026-11-09; revises old decision 5); `cofcup://` / bare payload still accepted on every incoming path |
 
 ## 9. Cross-cutting summary, tests, and deferred work
 
@@ -419,11 +447,16 @@ happen through the confirmed preview — never auto-merged.
   `ui/ImportPreviewScreen.kt` (GLM `JoinIncoming` merge), edited
   `ui/SessionScreen.kt` (shell hoisting), `ui/ReceiveResultsScreen.kt` and the
   broadcast show action reusing Share screens (+ blind-reveal absorption).
+  Phase 3 additionally ships the static landing page + `.well-known/assetlinks.json`
+  for GitHub Pages (fields: signing SHA-256; page needs no build tooling).
 - Changed: `data/Models.kt`, `data/CuppingRepository.kt`, `ui/CuppingViewModel.kt`
   (screen enum + `returnTo`, `my_id`/`my_name`, draft save/load/convert,
   join/ratings/merge/reveal handlers, `handleBack` cases), `MainActivity.kt`
-  (single `import` deep-link routing, queueing during a live session),
-  `AndroidManifest.xml` (one intent filter for `cofcup`; CAMERA permission +
+  (single `import` deep-link routing **plus the https App-Link `autoVerify`
+  filter — both extract `d=` and hand the string to the same codec path**,
+  queueing during a live session),
+  `AndroidManifest.xml` (one intent filter for `cofcup` **and** the autoVerify
+  https filter; CAMERA permission +
   `uses-feature … required=false`), `SetupScreen`
   (blind toggle), `HomeScreen`, `HistoryScreen`, `SessionDetailScreen`,
   `SessionScreen` (Rate chip + shell hoist), Settings (`my_name`, notes toggle).
@@ -451,6 +484,9 @@ happen through the confirmed preview — never auto-merged.
 
 - Codec join/results round-trip; version/kind rejection; blind payload contains
   no identities (injected identity fields rejected/ignored).
+- Entry-form equivalence: https App-Link URL, `cofcup://import?d=…`, and bare
+  `d=` payload all decode to the same result after validation; unknown host-path
+  or query-shape is rejected before payload processing.
 - Payload validation: bounded sizes, position uniqueness/range, name/notes caps,
   decompression-bomb cap; oversized payload → scores only / text fallback.
 - Legacy-history decode tolerance; full-model round-trip (incl. `revealedAt`,
@@ -462,7 +498,7 @@ happen through the confirmed preview — never auto-merged.
 - Merge replace-per-rater with `shareNotes=false` vs `true` surfaces.
 - Scanner integration: non-CofCup barcodes ignored with a plain hint; CAMERA
   denied → paste path fully functional; scanned payload validated by the same
-  rules as deep links (both entry points hit `ShareCodec`).
+  rules as deep links (both entry points hit `ShareCodec`, same accepted forms).
 - Shell refactor: Done detected while on Rating/Settings saves exactly once;
   skipped steps don't chime; chimes fire across the switch.
 - Reveal transitions: revealedAt set once; unmixed after (irreversible); guest
