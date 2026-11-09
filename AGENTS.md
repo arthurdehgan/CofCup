@@ -6,7 +6,7 @@
 
 ## Build & test
 
-- This dev machine (Windows) has **no Java, Gradle, or Android SDK**; there are also **no committed wrapper JAR/scripts** (only `gradle/wrapper/gradle-wrapper.properties`). So `./gradlew` does not exist and CLI builds fail locally. Verification options: Android Studio (syncs Gradle from the wrapper properties) or the CI workflow.
+- CLI builds **do work locally**: the machine has JDK 17 (Temurin), Gradle 9.6.0 (`C:\Gradle\...`, `gradle` on PATH) and the Android SDK (`C:\Users\Arthur\AppData\Local\Android\Sdk`, via `local.properties`). There are **no committed wrapper JAR/scripts** (only `gradle/wrapper/gradle-wrapper.properties`), so `./gradlew` does not exist — use the installed Gradle: `gradle :app:assembleDebug`. (Full machine/toolchain details live in the global `~/.config/opencode/AGENTS.md`; the emulator AVD `cofcup_test` is used for manual runs.)
 - CI (`.github/workflows/build.yml`) installs JDK 17 (Temurin) + Android SDK + Gradle 9.6.0, then runs:
   - `gradle :app:assembleDebug`
   - `gradle :app:testDebugUnitTest`
@@ -29,15 +29,18 @@
 
 - `0:00` in `data/CuppingTimeline.kt` = the moment water first hits the grounds; the user starts the timer itself ("Start cupping" then big Start on the live screen). Step windows are in seconds in that file — keep edits there, not in the screens.
 - A session is saved to history **only** when the Done step is reached (`onCuppingComplete`); leaving earlier discards it. Every session gets a fresh `UUID`.
+- "Start Cupping" on Home runs the timer with no cups (`cupCount = 0`); such a session is stored in history as an **Empty Cupping Session**. Back from an unstarted session (or confirmed "End & discard") always lands on Home.
 - The live timer increments `extraOffsetMs` on skip; elapsed time = `SystemClock.elapsedRealtime() - start + offset`. Keep this model when touching timers.
+- Step chimes fire only when the **timer itself** enters a new step (`stepChimes` flow → sound + optional vibration); skipped steps stay silent (`announcedStepStartSec` guards it). Don't chime on skip.
 
 ## Persistence & UI structure
 
-- History is a JSON array in **DataStore** (`CuppingRepository`, store `cofcup_store`, key `history_v1`) parsed with `org.json`; decode failures return an empty list; capped at 200 sessions. There is no Room/DB and no serialization plugin — don't add either for this.
-- Screens are one file per screen in `ui/`, orchestrated by a single `CuppingViewModel` (`Screen` sealed class + `handleBack()`); no navigation-compose dependency.
-- Manifest locks the activity to portrait and the session screen forces keep-screen-on — both intentional for a hands-on timer.
+- History is a JSON array in **DataStore** (`CuppingRepository`, store `cofcup_store`, key `history_v1`) parsed with `org.json`; decode failures return an empty list; capped at 200 sessions. The sound/vibration chime toggles live in the same store (`sound_on_next_step` on by default, `vibrate_on_next_step` off). There is no Room/DB and no serialization plugin — don't add either for this.
+- Screens are one file per screen in `ui/`, orchestrated by a single `CuppingViewModel` (`Screen` sealed class + `handleBack()`); no navigation-compose dependency. Settings is only reachable from the live-session screens (gear icon; back returns to LiveSession).
+- On Home the launcher icon is rendered via AndroidView + ImageView: `painterResource()` would **crash** on the adaptive `mipmap` icon (this exact crash was fixed once — don't revert it).
+- Manifest locks the activity to portrait; the session screen sets `view.keepScreenOn`; the only permission is VIBRATE (chime). All intentional for a hands-on, offline timer.
 
 ## Commit hygiene
 
 - The user tests manually and often has **uncommitted local fixes** in the tree. Commit those as their own commit **before** starting your changes (see the "manual testing fixes" commit), then commit your work separately.
-- Repo-local git identity is a placeholder (`Arthur` / noreply email) set only after the initial commit; keep using it unless the user changes it.
+- Repo-local git identity is `arthurdehgan` / `28764091+arthurdehgan@users.noreply.github.com` — keep using it unless the user changes it.
