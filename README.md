@@ -20,8 +20,7 @@ A free, open-source Android app that guides you through a **coffee cupping sessi
 | Time | Step |
 |---|---|
 | 0:00 → 4:00 | Fill the cups and let steep (crust forms, don't touch) |
-| 4:00 → 5:00 | Break the crust (3 pushes with a spoon, smell the aromas) |
-| 5:00 → 6:00 | Let grounds settle |
+| 4:00 → 6:00 | Break the crust (3 pushes with a spoon, smell the aromas), then grounds settle |
 | 6:00 → 8:00 | Clean the top of the cup (skim foam & floaters, then cool to ~70 °C) |
 | 8:00 → 15:00 | First cupping round (slurp; flavour, acidity, body) |
 | 15:00 → 22:00 | Second cupping round (taste as cups cool; sweetness opens up) |

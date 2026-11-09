@@ -5,9 +5,11 @@ package app.cofcup.data
  *
  * Windows follow the SCA cupping protocol and common home-cupping guides:
  * the crust stays unbroken for 4 minutes, the crust break happens at the
- * 4-minute mark, the surface is skimmed shortly after, first tasting starts
- * around 8 minutes after the pour (~70 °C), and the cups are re-tasted as they
- * cool, with a final (optional) pass near room temperature around 22-30 min.
+ * 4-minute mark, the grounds are then left alone to sink back (implied, no
+ * own step), the surface is skimmed from the 6-minute mark, first tasting
+ * starts around 8 minutes after the pour (~70 °C), and the cups are
+ * re-tasted as they cool, with a final (optional) pass near room temperature
+ * around 22-30 min.
  */
 data class CuppingStep(
     val title: String,
@@ -23,8 +25,7 @@ data class CuppingStep(
 object CuppingTimeline {
 
     const val STEEP_SECONDS = 4L * 60        // crust stays unbroken for 4 min
-    const val BREAK_END_SECONDS = 5L * 60    // break crust + smell for ~1 min
-    const val SETTLE_END_SECONDS = 6L * 60   // grounds sink back for ~1 min
+    const val BREAK_END_SECONDS = 6L * 60    // break crust + smell, then wait 2 min
     const val CLEAN_END_SECONDS = 8L * 60    // skim, then cool towards ~70 °C
     const val ROUND1_END_SECONDS = 15L * 60  // first round: flavour/acidity/body
     const val ROUND2_END_SECONDS = 22L * 60  // second round: as cups cool further
@@ -45,24 +46,17 @@ object CuppingTimeline {
             instruction = "Put your nose close to the surface and push the crust back " +
                 "three times with the back of a spoon. The released burst of aroma is the " +
                 "strongest the coffee will give — note what you smell. " +
-                "Rinse the spoon in hot water between cups.",
+                "Rinse the spoon in hot water between cups, then leave the cups alone " +
+                "while the grounds sink back before you skim.",
             startSec = STEEP_SECONDS,
             endSec = BREAK_END_SECONDS,
-        ),
-        CuppingStep(
-            title = "Let grounds settle",
-            instruction = "Give the cups a moment. The grounds that were pushed around " +
-                "during the crust break should be allowed to sink back to the bottom " +
-                "before you skim.",
-            startSec = BREAK_END_SECONDS,
-            endSec = SETTLE_END_SECONDS,
         ),
         CuppingStep(
             title = "Clean the top of the cup",
             instruction = "Skim off the foam and any floating grounds with one or two " +
                 "spoons until the surface is clean, rinsing the spoons between cups. " +
                 "Then let the coffee cool towards ~70 °C.",
-            startSec = SETTLE_END_SECONDS,
+            startSec = BREAK_END_SECONDS,
             endSec = CLEAN_END_SECONDS,
         ),
         CuppingStep(
