@@ -242,10 +242,10 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /** Confirmed from the leave-session dialog. */
+    /** Back from an unstarted session, or confirmed "End & discard" — land on Home. */
     fun discardLiveSession() {
         resetLiveSession()
-        _screen.value = Screen.Setup
+        _screen.value = Screen.Home
     }
 
     fun dismissLeaveDialog() {
