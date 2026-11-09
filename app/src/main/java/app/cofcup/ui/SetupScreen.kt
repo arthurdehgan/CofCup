@@ -42,7 +42,7 @@ fun SetupScreen(vm: CuppingViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("CofCup") },
+                title = { Text("Set-up Cupping Session") },
                 navigationIcon = {
                     IconButton(onClick = { vm.handleBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -58,17 +58,18 @@ fun SetupScreen(vm: CuppingViewModel) {
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
-            Text(
-                "Set up your cupping",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-            )
+            // Text(
+            //     "Set up your cupping",
+            //     style = MaterialTheme.typography.headlineSmall,
+            //     fontWeight = FontWeight.Bold,
+            //     modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+            // )
 
             Text(
                 "Cup size",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
             )
             Spacer(modifier = Modifier.height(4.dp))
             StepperRow(
@@ -99,8 +100,9 @@ fun SetupScreen(vm: CuppingViewModel) {
 
             Text(
                 "Number of coffees",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
             )
             Spacer(modifier = Modifier.height(4.dp))
             StepperRow(
