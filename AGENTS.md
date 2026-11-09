@@ -27,7 +27,7 @@
 - Every displayed amount must come from `data/CuppingMath.kt` (SCA ratio 8.25 g / 150 ml = 0.055 g/ml; water = cups × cup size). Don't recompute inline in UI.
 - Rounding is **two decimals, half-up** via `BigDecimal.setScale(2, HALF_UP)` (`round2`), per user decision. Do not change precision without asking.
 - Unit tests in `CuppingMathTest.kt` encode exact rounded values. When adding tests, note `BigDecimal(Double)` uses the exact binary value — e.g. `8.255` is not representable and rounds *down*; use representable cases (8.25, 13.75) or deltas.
-- The setup screen and the start-check screen must **not** show a "Coffee total / total to grind" line — the user removed it on purpose (twice). The only remaining total is on the past-session detail screen; don't reintroduce it elsewhere.
+- The setup screen and the start-check screen must **not** show a "Coffee total / total to grind" line — the user removed it on purpose (twice). The "Coffee total" line on the past-session detail screen was removed later too (2026-11); no screen shows a coffee total anymore — don't reintroduce it without asking.
 
 ## Cupping timeline & session rules
 

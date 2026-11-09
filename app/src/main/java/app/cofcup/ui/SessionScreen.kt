@@ -1,6 +1,8 @@
 package app.cofcup.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -44,13 +48,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cofcup.data.CuppingMath
 import app.cofcup.data.CuppingPlan
 import app.cofcup.data.CuppingStep
 import app.cofcup.data.CuppingTimeline
+import app.cofcup.data.SavedSession
+import app.cofcup.data.SessionStatus
 import app.cofcup.ui.components.CoffeeListCard
 import app.cofcup.ui.components.ConfirmDialog
+import app.cofcup.ui.components.displaySessionName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +66,8 @@ fun SessionScreen(vm: CuppingViewModel) {
     val live by vm.live.collectAsState()
     val elapsedMs by vm.elapsedMs.collectAsState()
     val showLeaveDialog by vm.showLeaveDialog.collectAsState()
+    val history by vm.history.collectAsState()
+    val plannedSetups = history.filter { it.status == SessionStatus.PLANNED }
     val session = live
 
     if (session == null) {
@@ -131,7 +141,13 @@ fun SessionScreen(vm: CuppingViewModel) {
         ) {
             when {
                 finished -> FinishedContent(vm = vm, plan = session.plan)
-                !running -> ReadyToStartContent(vm = vm, plan = session.plan, elapsedSec = elapsedSec)
+                !running -> ReadyToStartContent(
+                    vm = vm,
+                    plan = session.plan,
+                    elapsedSec = elapsedSec,
+                    plannedSetups = plannedSetups,
+                    selectedSetupId = session.plannedSessionId,
+                )
                 else -> RunningContent(plan = session.plan, elapsedSec = elapsedSec, current = current)
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -149,9 +165,18 @@ fun SessionScreen(vm: CuppingViewModel) {
     }
 }
 
-/** Timer not running yet: instructions, the big Start button, and a step preview. */
+/** Timer not running yet: instructions, saved setups to pick from, the big
+ *  Start button, and a step preview. The setup picker covers the quick-start
+ *  case (started straight from the timer with no cups) plus swapping setups
+ *  before the timer starts. */
 @Composable
-private fun ReadyToStartContent(vm: CuppingViewModel, plan: CuppingPlan, elapsedSec: Long) {
+private fun ReadyToStartContent(
+    vm: CuppingViewModel,
+    plan: CuppingPlan,
+    elapsedSec: Long,
+    plannedSetups: List<SavedSession>,
+    selectedSetupId: String?,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -179,6 +204,34 @@ private fun ReadyToStartContent(vm: CuppingViewModel, plan: CuppingPlan, elapsed
         }
     }
     Spacer(modifier = Modifier.height(16.dp))
+    if (plannedSetups.isNotEmpty()) {
+        Text(
+            "Saved setups",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(plannedSetups.size) { index ->
+                SavedSetupPickerChip(
+                    session = plannedSetups[index],
+                    selected = plannedSetups[index].id == selectedSetupId,
+                    onSelect = {
+                        val id = plannedSetups[index].id
+                        if (id == selectedSetupId) {
+                            vm.clearSelectedSetupForLive()
+                        } else {
+                            vm.selectPlannedSetupForLive(id)
+                        }
+                    },
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
     Button(
         onClick = { vm.beginTimer() },
         modifier = Modifier
@@ -195,6 +248,65 @@ private fun ReadyToStartContent(vm: CuppingViewModel, plan: CuppingPlan, elapsed
     }
     Spacer(modifier = Modifier.height(16.dp))
     StepsCard(elapsedSec = elapsedSec, currentStep = null)
+}
+
+/** One saved setup on the pre-start "Cupping" screen: tap loads it into the
+ *  session that is about to start (its planned row converts to done on Done).
+ *  Blind, un-revealed rows show a neutral label — names, numbers and colours
+ *  are never rendered here. */
+@Composable
+private fun SavedSetupPickerChip(
+    session: SavedSession,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    val blind = session.blind && session.revealedAtMs == null
+    val label = when {
+        // Blind, un-revealed setups never lose their neutral label (see Home).
+        blind -> "Blind setup · ${session.plan.cupCount} cup" +
+            if (session.plan.cupCount == 1) "" else "s"
+        session.plan.sessionName.isNotBlank() -> displaySessionName(session.plan.sessionName)
+        else -> "Cupping · ${session.plan.cupCount} cup" +
+            if (session.plan.cupCount == 1) "" else "s"
+    }
+
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 2.dp,
+        border = if (selected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            null
+        },
+        modifier = Modifier.clickable(onClick = onSelect),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (blind) {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                "${session.plan.cupSizeMl} ml per cup",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
 }
 
 /** Timer running: header timer, steps with timestamps, current instructions. */

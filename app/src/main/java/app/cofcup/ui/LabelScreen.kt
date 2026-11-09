@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -127,7 +128,22 @@ fun LabelScreen(vm: CuppingViewModel) {
                     .height(56.dp),
             ) {
                 Text(
-                    "Next: start cupping",
+                    "Continue",
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            // Same contract as "Save setup" on the "Ready to cup" screen: the
+            // draft is saved as a planned row (or overwrites the row being
+            // edited) and the app returns Home.
+            FilledTonalButton(
+                onClick = { vm.saveSetup() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            ) {
+                Text(
+                    "Save for later",
                     fontWeight = FontWeight.SemiBold,
                 )
             }

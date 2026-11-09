@@ -262,3 +262,8 @@ fun formatDateTime(epochMs: Long): String {
 fun sessionSummary(cupCount: Int, cupSizeMl: Int): String =
     "$cupCount cup${if (cupCount == 1) "" else "s"} · $cupSizeMl ml · " +
         CuppingMath.formatGrams(CuppingMath.coffeePerCupG(cupSizeMl)) + " per cup"
+
+/** Saved-setup displays show at most [max] characters of a session name; a cut
+ *  name ends with an ellipsis so the total stays within [max] characters. */
+fun displaySessionName(name: String, max: Int = 20): String =
+    if (name.length <= max) name else name.take(max - 1) + "\u2026"

@@ -99,6 +99,14 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
      */
     private var editingPlannedSessionId: String? = null
 
+    /**
+     * Snapshot of the live session + draft before the first saved-setup pick
+     * on the pre-start "Cupping" screen; restored by [clearSelectedSetupForLive]
+     * when the pick is cancelled by tapping the selected chip again. Null until
+     * the first pick; cleared again on cancel and when the session is reset.
+     */
+    private var liveBeforeSelection: Pair<LiveSession, CuppingDraft>? = null
+
     private val _stepChimes = MutableSharedFlow<Unit>(
         replay = 0,
         extraBufferCapacity = 8,
@@ -196,6 +204,11 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /** Optional display name of the cupping session (shown for saved setups). */
+    fun setSessionName(name: String) {
+        _draft.update { it.copy(sessionName = name.take(40)) }
+    }
+
     // ------------------------------------------------------------------
     // Navigation
     // ------------------------------------------------------------------
@@ -204,10 +217,13 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _screen.value = Screen.LabelCoffees
     }
 
-    /** "Set up cupping" on the home screen — a fresh setup, no planned row behind it. */
+    /** "Set up cupping" on the home screen — a fresh setup, no planned row behind it.
+     *  The draft is reset to the defaults: a stale draft from a saved-setup
+     *  edit/run must not leak its coffees into the new setup. */
     fun openSetup() {
         editingPlannedSessionId = null
         _plannedRunSource.value = null
+        _draft.value = CuppingDraft()
         _screen.value = Screen.Setup
     }
 
@@ -436,11 +452,69 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 cupSizeMl = session.plan.cupSizeMl,
                 cupCount = session.plan.cupCount,
                 coffees = session.plan.coffees,
+                sessionName = session.plan.sessionName,
             )
             editingPlannedSessionId = null
             _plannedRunSource.value = sessionId
             _screen.value = Screen.StartCheck(returnTo = backTo)
         }
+    }
+
+    /**
+     * On the pre-start "Cupping" screen (e.g. right after a quick start, which
+     * has no cups set up), the user can still pick a saved setup: its plan
+     * replaces the live one, and Done later converts that planned row in place
+     * — the same contract as running it from a Home chip. Only possible before
+     * the timer starts; ignored once the session is running or finished.
+     * Picking another chip swaps the plan and re-points the Done conversion at
+     * it (a previously picked row simply stays planned); tapping the already
+     * selected chip cancels the pick (see [clearSelectedSetupForLive]).
+     */
+    fun selectPlannedSetupForLive(sessionId: String) {
+        val session = _live.value ?: return
+        if (session.startedAtMs != null || session.finished) return
+        // Remember the session as it was before the first pick, so a later
+        // tap on the selected chip can restore it exactly.
+        if (liveBeforeSelection == null) liveBeforeSelection = session to _draft.value
+        viewModelScope.launch {
+            val planned = repository.sessions.first()
+                .firstOrNull { it.id == sessionId && it.status == SessionStatus.PLANNED }
+                ?: return@launch
+            // Normalize through the draft/toPlan contract (coffees = take(cupCount)).
+            val plan = CuppingDraft(
+                cupSizeMl = planned.plan.cupSizeMl,
+                cupCount = planned.plan.cupCount,
+                coffees = planned.plan.coffees,
+                sessionName = planned.plan.sessionName,
+            ).toPlan()
+            _draft.value = CuppingDraft(
+                cupSizeMl = plan.cupSizeMl,
+                cupCount = plan.cupCount,
+                coffees = plan.coffees,
+                sessionName = plan.sessionName,
+            )
+            _live.update { live ->
+                if (live == null || live.startedAtMs != null || live.finished) live
+                else live.copy(plan = plan, plannedSessionId = sessionId)
+            }
+        }
+    }
+
+    /**
+     * Tapping the already-selected setup again on the pre-start "Cupping"
+     * screen cancels the pick: the live session (and draft) are restored to
+     * exactly the state before the first pick — the empty plan for a
+     * quick-started session, so Done again saves an "Empty Cupping Session".
+     * Ignored when nothing was picked from that screen (e.g. the setup came
+     * from a Home chip) or once the timer has started.
+     */
+    fun clearSelectedSetupForLive() {
+        val (restoredSession, restoredDraft) = liveBeforeSelection ?: return
+        val current = _live.value ?: return
+        if (current.startedAtMs != null || current.finished) return
+        _live.value = restoredSession
+        _draft.value = restoredDraft
+        liveBeforeSelection = null
     }
 
     /** Chip overflow "Edit": loads the planned plan into the draft and opens
@@ -454,6 +528,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 cupSizeMl = session.plan.cupSizeMl,
                 cupCount = session.plan.cupCount,
                 coffees = session.plan.coffees,
+                sessionName = session.plan.sessionName,
             )
             editingPlannedSessionId = sessionId
             _plannedRunSource.value = null
@@ -470,6 +545,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _elapsedMs.value = 0
         _showLeaveDialog.value = false
         _plannedRunSource.value = null
+        liveBeforeSelection = null
         announcedStepStartSec = 0
     }
 

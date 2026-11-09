@@ -135,11 +135,17 @@ private fun HistoryItem(session: SavedSession, onClick: () -> Unit, onDelete: ()
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                val blindHidden = session.blind && session.revealedAtMs == null
+                val hasName = session.plan.sessionName.isNotBlank() && !blindHidden
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Header: the session name when there is one, otherwise the date.
+                    // Both use the same header style.
                     Text(
-                        formatDateTime(session.createdAtMs),
+                        if (hasName) session.plan.sessionName else formatDateTime(session.createdAtMs),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     )
                     if (session.status == SessionStatus.PLANNED) {
                         Spacer(modifier = Modifier.width(8.dp))
@@ -159,8 +165,16 @@ private fun HistoryItem(session: SavedSession, onClick: () -> Unit, onDelete: ()
                         )
                     }
                 }
+                if (hasName) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    // With a name as the header, the date demotes to a subtitle.
+                    Text(
+                        formatDateTime(session.createdAtMs),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(modifier = Modifier.height(2.dp))
-                val blindHidden = session.blind && session.revealedAtMs == null
                 Text(
                     // Quick-start sessions are stored with no cups and no coffees;
                     // blind rows show a neutral label until an explicit reveal.

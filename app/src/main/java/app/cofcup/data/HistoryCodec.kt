@@ -45,7 +45,12 @@ internal object HistoryCodec {
         SavedSession(
             id = id,
             createdAtMs = obj.optLong("createdAt", 0L),
-            plan = CuppingPlan(cupSizeMl = cupSizeMl, cupCount = cupCount, coffees = decodeCoffees(obj)),
+            plan = CuppingPlan(
+                cupSizeMl = cupSizeMl,
+                cupCount = cupCount,
+                coffees = decodeCoffees(obj),
+                sessionName = obj.optString("sessionName", ""),
+            ),
             status = when (obj.optString("status")) {
                 "planned" -> SessionStatus.PLANNED
                 else -> SessionStatus.DONE
@@ -137,6 +142,7 @@ internal object HistoryCodec {
             put("cupSizeMl", session.plan.cupSizeMl)
             put("cupCount", session.plan.cupCount)
             put("coffees", coffees)
+            if (session.plan.sessionName.isNotBlank()) put("sessionName", session.plan.sessionName)
             if (session.status == SessionStatus.PLANNED) put("status", "planned")
             if (session.blind) put("blind", true)
             if (session.revealedAtMs != null) put("revealedAt", session.revealedAtMs)

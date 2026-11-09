@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -64,6 +65,18 @@ fun SetupScreen(vm: CuppingViewModel) {
             //     fontWeight = FontWeight.Bold,
             //     modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
             // )
+
+            // Optional display name: shown for this session's saved setups.
+            OutlinedTextField(
+                value = draft.sessionName,
+                onValueChange = { vm.setSessionName(it) },
+                singleLine = true,
+                label = { Text("Session name (optional)") },
+                placeholder = { Text("e.g. Saturday morning cupping") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
 
             Text(
                 "Cup size",
@@ -154,7 +167,7 @@ fun SetupScreen(vm: CuppingViewModel) {
                     .fillMaxWidth()
                     .height(56.dp),
             ) {
-                Text("Next: name the coffees")
+                Text("Name and Label the Coffees")
             }
             Spacer(modifier = Modifier.height(24.dp))
         }

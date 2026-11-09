@@ -51,6 +51,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import app.cofcup.R
 import app.cofcup.data.SessionStatus
 import app.cofcup.data.SavedSession
+import app.cofcup.ui.components.displaySessionName
 
 /**
  * The app's home: launcher icon, title, history, and the two entry points —
@@ -184,10 +185,15 @@ private fun PlannedSetupChip(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val blind = session.blind && session.revealedAtMs == null
-    val label = if (blind) {
-        "Blind setup · ${session.plan.cupCount} cup${if (session.plan.cupCount == 1) "" else "s"}"
-    } else {
-        "Cupping · ${session.plan.cupCount} cup${if (session.plan.cupCount == 1) "" else "s"}"
+    val label = when {
+        // Blind, un-revealed setups never lose their neutral label — the
+        // session name would not leak cup identity, but staying uniform
+        // keeps blind rows recognisable.
+        blind -> "Blind setup · ${session.plan.cupCount} cup" +
+            if (session.plan.cupCount == 1) "" else "s"
+        session.plan.sessionName.isNotBlank() -> displaySessionName(session.plan.sessionName)
+        else -> "Cupping · ${session.plan.cupCount} cup" +
+            if (session.plan.cupCount == 1) "" else "s"
     }
 
     Surface(

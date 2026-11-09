@@ -52,12 +52,15 @@ data class CuppingDraft(
     val cupSizeMl: Int = DEFAULT_CUP_SIZE,
     val cupCount: Int = DEFAULT_CUP_COUNT,
     val coffees: List<CoffeeEntry> = CupColors.defaultCoffees(),
+    /** Optional display name of the cupping session; used for saved setups. */
+    val sessionName: String = "",
 ) {
     /** Immutable snapshot used while a session is running. */
     fun toPlan(): CuppingPlan = CuppingPlan(
         cupSizeMl = cupSizeMl,
         cupCount = cupCount,
         coffees = coffees.take(cupCount),
+        sessionName = sessionName,
     )
 
     companion object {
@@ -75,6 +78,8 @@ data class CuppingPlan(
     val cupSizeMl: Int,
     val cupCount: Int,
     val coffees: List<CoffeeEntry>,
+    /** Optional display name of the session (see [CuppingDraft.sessionName]). */
+    val sessionName: String = "",
 )
 
 /** Lifecycle state of a stored session. Absent in JSON means done (legacy rows). */
