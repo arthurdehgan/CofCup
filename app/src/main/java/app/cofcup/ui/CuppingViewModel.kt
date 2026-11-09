@@ -232,7 +232,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 true
             }
             Screen.History -> {
-                _screen.value = Screen.Setup
+                _screen.value = Screen.Home
                 true
             }
             is Screen.SessionDetail -> {
