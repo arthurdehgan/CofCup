@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 
 /** The app's destinations. Kept simple: one sealed interface plus a screen switch. */
 sealed interface Screen {
+    data object Home : Screen
     data object Setup : Screen
     data object LabelCoffees : Screen
     data object StartCheck : Screen
@@ -54,7 +55,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository = application.appRepository()
 
-    private val _screen = MutableStateFlow<Screen>(Screen.Setup)
+    private val _screen = MutableStateFlow<Screen>(Screen.Home)
     val screen: StateFlow<Screen> = _screen.asStateFlow()
 
     private val _draft = MutableStateFlow(CuppingDraft())
@@ -174,6 +175,11 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _screen.value = Screen.LabelCoffees
     }
 
+    /** "Set up cupping" on the home screen. */
+    fun openSetup() {
+        _screen.value = Screen.Setup
+    }
+
     fun openStartCheck() {
         _screen.value = Screen.StartCheck
     }
@@ -197,7 +203,11 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
      */
     fun handleBack(): Boolean {
         return when (val current = _screen.value) {
-            Screen.Setup -> false
+            Screen.Home -> false
+            Screen.Setup -> {
+                _screen.value = Screen.Home
+                true
+            }
             Screen.LabelCoffees -> {
                 _screen.value = Screen.Setup
                 true
@@ -264,6 +274,23 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /** "Start Cupping" on the home screen: straight to the timer, with no cups set up.
+     *  A session completed this way is stored in history as an "Empty Cupping Session". */
+    fun quickStartCupping() {
+        if (_live.value == null) {
+            _live.value = LiveSession(
+                plan = CuppingPlan(
+                    cupSizeMl = _draft.value.cupSizeMl,
+                    cupCount = 0,
+                    coffees = emptyList(),
+                ),
+            )
+            _elapsedMs.value = 0
+            announcedStepStartSec = 0
+        }
+        _screen.value = Screen.LiveSession
+    }
+
     /** Advances the timeline to the start of the next step. */
     fun skipStep() {
         val elapsedMs = _elapsedMs.value
@@ -293,7 +320,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
 
     fun goHomeAfterSession() {
         resetLiveSession()
-        _screen.value = Screen.Setup
+        _screen.value = Screen.Home
     }
 
     fun goHistoryAfterSession() {

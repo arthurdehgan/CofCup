@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -43,9 +43,9 @@ fun SetupScreen(vm: CuppingViewModel) {
         topBar = {
             TopAppBar(
                 title = { Text("CofCup") },
-                actions = {
-                    IconButton(onClick = { vm.openHistory() }) {
-                        Icon(Icons.Default.History, contentDescription = "Session history")
+                navigationIcon = {
+                    IconButton(onClick = { vm.handleBack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
             )

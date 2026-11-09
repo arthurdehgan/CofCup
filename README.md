@@ -4,16 +4,18 @@ A free, open-source Android app that guides you through a **coffee cupping sessi
 
 ## What it does
 
-1. **Set up** — pick your cup size (ml) and how many coffees to cup (1–12).
+1. **Home** — the app opens with the launcher icon, a **history** shortcut, and two buttons: **Start Cupping** jumps straight into the guided timer without any setup, and **Set up cupping** opens the flow below.
+
+2. **Set up** — pick your cup size (ml) and how many coffees to cup (1–12).
    The app will tell you how much coffee you will need to grind for each cup according to the SCA ratio, 8.25 g per 150 ml → *5.5 g per 100 ml*, (e.g. exactly `8.25 g` for a 150 ml cup)
 
-2. **Name the coffees** — You can associate a **number** and a **colour** to each coffee and give it a name to be able to find which cup had which coffee at the end of the session.
+3. **Name the coffees** — You can associate a **number** and a **colour** to each coffee and give it a name to be able to find which cup had which coffee at the end of the session.
 
-3. **Start cupping** — This will guide you through a typical cupping session with pouring, breaking the crust, scraping the top of the cup and then tasting.
+4. **Start cupping** — This will guide you through a typical cupping session with pouring, breaking the crust, scraping the top of the cup and then tasting.
 
-4. **Done** — check the coffee list you defined earlier to identify the cups by colour/number.
+5. **Done** — check the coffee list you defined earlier to identify the cups by colour/number. Sessions started without any setup are saved to history as an **Empty Cupping Session** (no cups, no coffees).
 
-5. **History** — finished sessions are saved; go back to any previous session's coffee list, and delete sessions you don't need from the history list.
+6. **History** — finished sessions are saved; go back to any previous session's coffee list, and delete sessions you don't need from the history list.
 
 ## The cupping timeline used (0:00 = first water hits the grounds)
 

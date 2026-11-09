@@ -16,6 +16,7 @@ fun CuppingApp() {
     val screen by vm.screen.collectAsState()
 
     when (val s = screen) {
+        Screen.Home -> HomeScreen(vm)
         Screen.Setup -> SetupScreen(vm)
         Screen.LabelCoffees -> LabelScreen(vm)
         Screen.StartCheck -> StartCheckScreen(vm)

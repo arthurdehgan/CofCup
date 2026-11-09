@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -89,7 +90,19 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
             )
             SessionSummaryCard(session)
             Spacer(modifier = Modifier.height(16.dp))
-            CoffeeListCard(coffees = session.plan.coffees)
+            if (session.plan.coffees.isEmpty()) {
+                // Quick-start ("Empty Cupping Session"): no cups were labelled.
+                OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Empty Cupping Session — this session was started straight from " +
+                            "the timer, so there is no coffee list.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+            } else {
+                CoffeeListCard(coffees = session.plan.coffees)
+            }
             Spacer(modifier = Modifier.height(20.dp))
             OutlinedButton(
                 onClick = { confirmDelete = true },

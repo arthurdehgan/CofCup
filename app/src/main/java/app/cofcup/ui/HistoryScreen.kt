@@ -99,11 +99,16 @@ fun HistoryScreen(vm: CuppingViewModel) {
     }
 
     pendingDelete?.let { session ->
+        val empty = session.plan.coffees.isEmpty()
         ConfirmDialog(
             title = "Delete session?",
-            text = "Remove the session from ${formatDateTime(session.createdAtMs)} " +
-                "(${sessionSummary(session.plan.cupCount, session.plan.cupSizeMl)})? " +
-                "Its coffee list will be gone for good.",
+            text = if (empty) {
+                "Remove the Empty Cupping Session from ${formatDateTime(session.createdAtMs)}?"
+            } else {
+                "Remove the session from ${formatDateTime(session.createdAtMs)} " +
+                    "(${sessionSummary(session.plan.cupCount, session.plan.cupSizeMl)})? " +
+                    "Its coffee list will be gone for good."
+            },
             confirmLabel = "Delete",
             onConfirm = {
                 vm.deleteSession(session.id)
@@ -135,19 +140,26 @@ private fun HistoryItem(session: SavedSession, onClick: () -> Unit, onDelete: ()
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    sessionSummary(session.plan.cupCount, session.plan.cupSizeMl),
+                    // Quick-start sessions are stored with no cups and no coffees.
+                    if (session.plan.coffees.isEmpty()) {
+                        "Empty Cupping Session"
+                    } else {
+                        sessionSummary(session.plan.cupCount, session.plan.cupSizeMl)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    session.plan.coffees.forEach { coffee ->
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(androidx.compose.ui.graphics.Color(coffee.colorArgb))
-                        )
+                if (session.plan.coffees.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        session.plan.coffees.forEach { coffee ->
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(androidx.compose.ui.graphics.Color(coffee.colorArgb))
+                            )
+                        }
                     }
                 }
             }

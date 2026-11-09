@@ -213,10 +213,19 @@ private fun ReadyToStartContent(vm: CuppingViewModel, plan: CuppingPlan, elapsed
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "\u2022 Place the ${plan.cupCount} cup${if (plan.cupCount == 1) "" else "s"} in a row, " +
-                    "in your tasting order.\n" +
-                    "\u2022 Grind the ground coffee into each cup and heat water to ~93 \u00b0C.\n" +
-                    "\u2022 Press START as water first hits the grounds \u2014 that moment is 0:00.",
+                if (plan.coffees.isEmpty()) {
+                    // Quick start ("Empty Cupping Session"): no cups were set up.
+                    "\u2022 Place your cups in a row, in your tasting order.\n" +
+                        "\u2022 Heat water to ~93 \u00b0C \u2014 the SCA ratio is 8.25 g " +
+                        "of coffee per 150 ml.\n" +
+                        "\u2022 Press START as water first hits the grounds \u2014 " +
+                        "that moment is 0:00."
+                } else {
+                    "\u2022 Place the ${plan.cupCount} cup${if (plan.cupCount == 1) "" else "s"} in a row, " +
+                        "in your tasting order.\n" +
+                        "\u2022 Grind the ground coffee into each cup and heat water to ~93 \u00b0C.\n" +
+                        "\u2022 Press START as water first hits the grounds \u2014 that moment is 0:00."
+                },
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -414,21 +423,37 @@ private fun StepLeadIcon(completed: Boolean, isCurrent: Boolean, index: Int) {
     }
 }
 
-/** Completed rows get a check; running rows a filled dot; later rows a number badge. */
+/** Done screen: coffee identification, unless this was an empty quick-start session. */
 @Composable
-private fun FinishedContent(vm: CuppingViewModel, plan: CuppingPlan) {    Text(
-        "Cupping complete",
-        style = MaterialTheme.typography.headlineSmall,
-        fontWeight = FontWeight.Bold,
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-    Text(
-        "Identify each cup below by its colour and number. The session was saved to your history.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-    CoffeeListCard(coffees = plan.coffees)
+private fun FinishedContent(vm: CuppingViewModel, plan: CuppingPlan) {
+    if (plan.coffees.isEmpty()) {
+        Text(
+            "Empty Cupping Session",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "This session was started straight from the timer, so no cups were labelled. " +
+                "It was saved to your history.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        Text(
+            "Cupping complete",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            "Identify each cup below by its colour and number. The session was saved to your history.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        CoffeeListCard(coffees = plan.coffees)
+    }
     Spacer(modifier = Modifier.height(16.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = { vm.goHomeAfterSession() }) {
