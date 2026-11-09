@@ -1,0 +1,26 @@
+CofCup guides you through a coffee cupping session, step by step, with timers that follow the SCA cupping protocol.
+
+<b>What it does</b>
+
+• Decide your cup size (ml) and how many coffees to cup (1–16). CofCup tells you how much coffee to grind per cup using the SCA ratio (8.25 g per 150 ml, i.e. 5.5 g per 100 ml, rounded to two decimals) and how much water to boil (cups × cup size).
+• Give each coffee a name, a number (the one written on or under the cup) and a colour, so you can identify every cup at the end.
+• Run the session guided by a timer: pour at 0:00, break the crust at 4:00, clean the top of the cup at 6:00, three tasting rounds at 8:00, 15:00 and (optional) 22:00, done at 30:00. The timer suggests each step when it starts, chimes if you have the sound on, and you can skip steps — the timer stays true to the timeline because elapsed time is measured continuously.
+• Finish the session and use the coloured, numbered list back to know which cup held which coffee.
+• Finished sessions are saved to a history on your device (capped at 200), and you can revisit or delete them.
+• "Start Cupping" also runs the timer with no cups at all, if you just want a guided session timer.
+
+<b>The timeline</b> (0:00 = the moment water first hits the grounds):
+
+0:00 → 4:00 Fill the cups and let steep (crust forms, don't touch)
+4:00 → 6:00 Break the crust (3 pushes with a spoon, smell the aromas), let the grounds settle
+6:00 → 8:00 Clean the top of the cup (skim foam, cool to ~70 °C)
+8:00 → 15:00 First tasting round (slurp; flavour, acidity, body)
+15:00 → 22:00 Second tasting round (as cups cool; sweetness opens up)
+22:00 → 30:00 Optional third round (near room temperature)
+
+<b>Details</b>
+
+• Free software (MIT licence) — source code in the repository link below.
+• Fully offline: the app requests no Internet permission.
+• No tracking, no ads, no accounts.
+• Settings let you enable/disable the step chime sound and a haptic vibrate on each new step.

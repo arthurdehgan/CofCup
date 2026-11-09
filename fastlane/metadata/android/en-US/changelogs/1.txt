@@ -1,0 +1,1 @@
+First release: guided SCA cupping timer (0:00–30:00, 7 steps), cup size and coffee-count setup with SCA-ratio amounts (8.25 g per 150 ml), coffee labelling with colours and numbers, step chimes (optional sound/vibration) and on-device session history.
