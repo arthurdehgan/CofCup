@@ -52,7 +52,7 @@ gradle :app:assembleDebug
 gradle :app:testDebugUnitTest   # runs the ratio/timeline maths unit tests
 ```
 
-> The wrapper JAR is not committed (generated projects are lighter); Android Studio picks the Gradle version from `gradle-wrapper.properties`, and CI installs Gradle explicitly. Run `gradle wrapper` locally if you want `./gradlew` scripts.
+> The gradle wrapper (`gradlew` + `gradle/wrapper/*`) **is committed** — run `./gradlew :app:assembleDebug` (Windows: `gradlew.bat`). It also keeps CI and the F-Droid buildserver on the same Gradle 9.6.0.
 
 ## Project logo & identity
 
