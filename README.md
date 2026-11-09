@@ -4,7 +4,7 @@ A free, open-source Android app that guides you through a **coffee cupping sessi
 
 ## What it does
 
-1. **Home** — the app opens with the launcher icon, a **history** shortcut, and two buttons: **Start Cupping** jumps straight into the guided timer without any setup, and **Set up cupping** opens the flow below.
+1. **Home** — the app opens with the launcher icon, a **history** shortcut, and two buttons: **Start Cupping** jumps straight into the guided timer without any setup (Step 4.), and **Set up cupping** opens the flow below.
 
 2. **Set up** — pick your cup size (ml) and how many coffees to cup (1–12).
    The app will tell you how much coffee you will need to grind for each cup according to the SCA ratio, 8.25 g per 150 ml → *5.5 g per 100 ml*, (e.g. exactly `8.25 g` for a 150 ml cup)
@@ -60,8 +60,6 @@ The launcher icon is a cupping bowl with steam, and the palette is coffee-brown 
 
 ## Roadmap
 
-- Sound/vibration cues when a step changes
-- Skip setting up, some people want only the timer
 - Per-coffee tasting notes (rating each cup, saved with the history)
 - Screen to freely walk the timeline while keeping the session alive mid-cupping (wizard re-entry)
 - Localisation (English UI today)
