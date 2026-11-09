@@ -11,9 +11,10 @@
   - `gradle :app:assembleDebug`
   - `gradle :app:testDebugUnitTest`
 - Unit tests (pure JUnit, `app/src/test`, run all): `CuppingMathTest`,
-  `CupColorsTest`, `HistoryCodecTest`, `BlindRedactionTest`. A single class can be
-  selected with `--tests "app.cofcup.CuppingMathTest"`. `HistoryCodecTest` uses the
-  test-only `org.json:json` dependency (same API as the Android runtime).
+  `CupColorsTest`, `HistoryCodecTest`, `BlindRedactionTest`, `PlanConversionTest`.
+  A single class can be selected with `--tests "app.cofcup.CuppingMathTest"`.
+  `HistoryCodecTest` uses the test-only `org.json:json` dependency (same API as
+  the Android runtime).
 
 ## Toolchain quirks
 

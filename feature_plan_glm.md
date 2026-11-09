@@ -1,8 +1,11 @@
 # CofCup — new features plan (v2, reconciled 2026-11-09)
 
-Planning document only. **No implementation has been done yet.** This is the reference
-for whenever implementation starts; it is deliberately self-contained so it makes
-sense without the brainstorming conversation behind it.
+Planning document. This is the reference for the ongoing implementation; it is
+deliberately self-contained so it makes sense without the brainstorming
+conversation behind it.
+
+**Status (2026-11-09).** Phase 0 and phase 1 are implemented and committed
+(`7efd0ec`, `e63da8e`). Phases 2–4 remain.
 
 **v2 note.** This is the GLM plan after reconciliation with
 `feature_plan_deepseek.md`. Deepseek's plan was reviewed against the actual code;
