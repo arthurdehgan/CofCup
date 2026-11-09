@@ -1,6 +1,5 @@
 package app.cofcup.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,10 +21,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import android.widget.ImageView
+import androidx.compose.ui.viewinterop.AndroidView
 import app.cofcup.R
 
 /**
@@ -58,10 +58,13 @@ fun HomeScreen(vm: CuppingViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Image(
-                    painter = painterResource(R.mipmap.ic_launcher),
-                    contentDescription = "CofCup",
+                // The launcher icon is an adaptive icon (not a plain drawable), so a
+                // classic ImageView is needed — painterResource() would crash on it.
+                AndroidView(
                     modifier = Modifier.size(96.dp),
+                    factory = { context ->
+                        ImageView(context).apply { setImageResource(R.mipmap.ic_launcher) }
+                    },
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
