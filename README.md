@@ -5,16 +5,14 @@ A free, open-source Android app that guides you through a **coffee cupping sessi
 ## What it does
 
 1. **Set up** — pick your cup size (ml) and how many coffees to cup (1–12).
-   CofCup computes the amounts for you:
-   - **Water to boil** = number of coffees × cup size
-   - **Coffee per cup** = SCA ratio, 8.25 g per 150 ml → *5.5 g per 100 ml*, rounded to **two decimals** (e.g. exactly `8.25 g` for a 150 ml cup)
-   - **Total coffee to grind**
-2. **Name the coffees** — associate a **number** and a **colour** to each coffee and give it a name, so after the cupping you can identify every cup on the table at a glance.
-3. **Start cupping** — one big *Start* button (plus a small *Back* button). Once the timer runs, the screen shows:
-   - the **current step** and the **time lapsed** since the first pour at the top
-   - the full **step list with timestamps** below, the current step highlighted
-   - instructions for what to do right now, and a countdown to the next step
+   The app will tell you how much coffee you will need to grind for each cup according to the SCA ratio, 8.25 g per 150 ml → *5.5 g per 100 ml*, (e.g. exactly `8.25 g` for a 150 ml cup)
+
+2. **Name the coffees** — You can associate a **number** and a **colour** to each coffee and give it a name to be able to find which cup had which coffee at the end of the session.
+
+3. **Start cupping** — This will guide you through a typical cupping session with pouring, breaking the crust, scraping the top of the cup and then tasting.
+
 4. **Done** — check the coffee list you defined earlier to identify the cups by colour/number.
+
 5. **History** — finished sessions are saved; go back to any previous session's coffee list, and delete sessions you don't need from the history list.
 
 ## The cupping timeline used (0:00 = first water hits the grounds)
@@ -27,7 +25,7 @@ A free, open-source Android app that guides you through a **coffee cupping sessi
 | 6:00 → 8:00 | Clean the top of the cup (skim foam & floaters, then cool to ~70 °C) |
 | 8:00 → 15:00 | First cupping round (slurp; flavour, acidity, body) |
 | 15:00 → 22:00 | Second cupping round (taste as cups cool; sweetness opens up) |
-| 22:00 → 30:00 | Optional third cupping round (near room temperature; skippable) |
+| 22:00 → 30:00 | Optional third cupping round (near room temperature; optional) |
 | Done | Cupping complete — identify the coffees |
 
 Timers follow the [SCA cupping protocol](https://sca.coffee/research/cupping-protocol): water at ~93 °C, a 4-minute undisturbed steep, the crust broken at the 4-minute mark, tasting starting ~8 min after the pour at ~70 °C, and further passes as the cups cool. See also [Gota's summary of the SCA protocol](https://gota.cafe/en/learn/cupping/sca-protocol) and [Conscious Cup's step table](https://consciouscup.com/pages/brew-methods/cupping).
@@ -59,9 +57,10 @@ gradle :app:testDebugUnitTest   # runs the ratio/timeline maths unit tests
 
 The launcher icon is a cupping bowl with steam, and the palette is coffee-brown inspired. Screens are portrait-only since the app is a session timer.
 
-## Roadmap ideas
+## Roadmap
 
 - Sound/vibration cues when a step changes
+- Skip setting up, some people want only the timer
 - Per-coffee tasting notes (rating each cup, saved with the history)
 - Screen to freely walk the timeline while keeping the session alive mid-cupping (wizard re-entry)
 - Localisation (English UI today)
