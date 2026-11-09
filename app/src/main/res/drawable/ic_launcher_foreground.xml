@@ -12,13 +12,13 @@
         android:scaleY="2.25">
         <!-- Waves -->
         <path
-            android:pathData="M8,4.4 Q10,3.2 12,4.4 Q14,5.6 16,4.4"
+            android:pathData="M9.5,3.2 Q8.3,4.4 9.5,5.6 Q10.7,6.9 9.5,8.2"
             android:strokeColor="#F5EBDD"
             android:strokeWidth="1.4"
             android:strokeLineCap="round"
             android:fillColor="#00000000" />
         <path
-            android:pathData="M8,7.2 Q10,6 12,7.2 Q14,8.4 16,7.2"
+            android:pathData="M14.5,3.2 Q13.3,4.4 14.5,5.6 Q15.7,6.9 14.5,8.2"
             android:strokeColor="#F5EBDD"
             android:strokeWidth="1.4"
             android:strokeLineCap="round"

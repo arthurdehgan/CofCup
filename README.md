@@ -56,7 +56,7 @@ gradle :app:testDebugUnitTest   # runs the ratio/timeline maths unit tests
 
 ## Project logo & identity
 
-The launcher icon is a cupping bowl with two small waves rising above it, and the palette is coffee-brown inspired. Screens are portrait-only since the app is a session timer.
+The launcher icon is a cupping bowl with two small vertical waves rising above it, and the palette is coffee-brown inspired. Screens are portrait-only since the app is a session timer.
 
 ## Roadmap
 
