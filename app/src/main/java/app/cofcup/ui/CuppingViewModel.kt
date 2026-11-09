@@ -30,6 +30,7 @@ sealed interface Screen {
     data object LabelCoffees : Screen
     data object StartCheck : Screen
     data object LiveSession : Screen
+    data object Settings : Screen
     data object History : Screen
     data class SessionDetail(val sessionId: String) : Screen
 }
@@ -86,6 +87,28 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList(),
         )
+
+    /** Timer-advance chime setting (stored, on by default). */
+    val soundOn: StateFlow<Boolean> = repository.soundOn.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = true,
+    )
+
+    /** Timer-advance vibration setting (stored, off by default). */
+    val vibrateOn: StateFlow<Boolean> = repository.vibrateOn.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = false,
+    )
+
+    fun setSoundOn(enabled: Boolean) {
+        viewModelScope.launch { repository.setSoundOn(enabled) }
+    }
+
+    fun setVibrateOn(enabled: Boolean) {
+        viewModelScope.launch { repository.setVibrateOn(enabled) }
+    }
 
     init {
         viewModelScope.launch {
@@ -163,6 +186,11 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _screen.value = Screen.SessionDetail(sessionId)
     }
 
+    /** Gear icon on the live-session screens. */
+    fun openSettings() {
+        _screen.value = Screen.Settings
+    }
+
     /**
      * System/hardware back. Returns true when the press was handled, false when
      * the caller should let the activity finish.
@@ -187,6 +215,10 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 } else {
                     discardLiveSession()
                 }
+                true
+            }
+            Screen.Settings -> {
+                _screen.value = Screen.LiveSession
                 true
             }
             Screen.History -> {

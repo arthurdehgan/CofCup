@@ -1,6 +1,7 @@
 package app.cofcup.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -19,10 +20,26 @@ class CuppingRepository(context: Context) {
 
     private val store = context.applicationContext.cofcupDataStore
     private val historyKey = stringPreferencesKey("history_v1")
+    private val soundKey = booleanPreferencesKey("sound_on_next_step")
+    private val vibrateKey = booleanPreferencesKey("vibrate_on_next_step")
 
     /** All saved sessions, newest first. */
     val sessions: Flow<List<SavedSession>> = store.data.map { prefs ->
         decodeHistory(prefs[historyKey])
+    }
+
+    /** Whether a chime is played when the timer advances a step (on by default). */
+    val soundOn: Flow<Boolean> = store.data.map { prefs -> prefs[soundKey] ?: true }
+
+    /** Whether the phone vibrates when the timer advances a step (off by default). */
+    val vibrateOn: Flow<Boolean> = store.data.map { prefs -> prefs[vibrateKey] ?: false }
+
+    suspend fun setSoundOn(enabled: Boolean) {
+        store.edit { prefs -> prefs[soundKey] = enabled }
+    }
+
+    suspend fun setVibrateOn(enabled: Boolean) {
+        store.edit { prefs -> prefs[vibrateKey] = enabled }
     }
 
     suspend fun save(session: SavedSession) {

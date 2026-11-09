@@ -1,7 +1,12 @@
 package app.cofcup.ui
 
+import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -79,8 +85,8 @@ fun SessionScreen(vm: CuppingViewModel) {
         onDispose { view.keepScreenOn = false }
     }
 
-    // A soft chime whenever the timer advances to the next step. The ViewModel
-    // only emits for timer-driven advances, so "Skip step" stays silent.
+    // A soft chime and/or vibration whenever the timer advances to the next step.
+    // The ViewModel only emits for timer-driven advances, so "Skip step" stays silent.
     val context = LocalContext.current
     val soundPool = remember {
         SoundPool.Builder()
@@ -97,8 +103,14 @@ fun SessionScreen(vm: CuppingViewModel) {
     DisposableEffect(Unit) {
         onDispose { soundPool.release() }
     }
+    val soundOn by vm.soundOn.collectAsState()
+    val vibrateOn by vm.vibrateOn.collectAsState()
+    val vibrator = remember { context.stepVibrator() }
     LaunchedEffect(soundPool, chimeId) {
-        vm.stepChimes.collect { soundPool.play(chimeId, 0.55f, 0.55f, 1, 0, 1f) }
+        vm.stepChimes.collect {
+            if (soundOn) soundPool.play(chimeId, 0.55f, 0.55f, 1, 0, 1f)
+            if (vibrateOn) vibrator?.vibrate(CHIME_VIBRATION)
+        }
     }
 
     val running = session.startedAtMs != null
@@ -127,6 +139,11 @@ fun SessionScreen(vm: CuppingViewModel) {
                 navigationIcon = {
                     IconButton(onClick = { vm.handleBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { vm.openSettings() }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
             )
@@ -399,8 +416,7 @@ private fun StepLeadIcon(completed: Boolean, isCurrent: Boolean, index: Int) {
 
 /** Completed rows get a check; running rows a filled dot; later rows a number badge. */
 @Composable
-private fun FinishedContent(vm: CuppingViewModel, plan: CuppingPlan) {
-    Text(
+private fun FinishedContent(vm: CuppingViewModel, plan: CuppingPlan) {    Text(
         "Cupping complete",
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.Bold,
@@ -423,3 +439,16 @@ private fun FinishedContent(vm: CuppingViewModel, plan: CuppingPlan) {
         }
     }
 }
+
+/** Quick double pulse — a "brrr brrr" — for step advances. */
+private val CHIME_VIBRATION: VibrationEffect =
+    VibrationEffect.createWaveform(longArrayOf(0, 60, 120, 60), -1)
+
+/** Default Vibrator, working across API levels (26+). */
+private fun Context.stepVibrator(): Vibrator? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+    } else {
+        @Suppress("DEPRECATION")
+        getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+    }
