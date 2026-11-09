@@ -1,0 +1,26 @@
+Categories:
+  - Timer
+  - Sports & Health
+License: MIT
+AuthorName: Arthur
+SourceCode: https://github.com/arthurdehgan/cupnlog
+IssueTracker: https://github.com/arthurdehgan/cupnlog/issues
+
+AutoName: Cup 'n Log
+Name: Cup 'n Log
+
+RepoType: git
+Repo: https://github.com/arthurdehgan/cupnlog
+
+Builds:
+  - versionName: 0.1.0
+    versionCode: 1
+    commit: 8cd40dc1024aaebb7e0a97dadc21e6982f35ccb1
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: 0.1.0
+CurrentVersionCode: 1

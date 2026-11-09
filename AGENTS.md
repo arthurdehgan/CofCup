@@ -6,13 +6,13 @@
 
 ## Build & test
 
-- CLI builds **do work locally**: the machine has JDK 17 (Temurin), Gradle 9.6.0 (`C:\Gradle\...`, `gradle` on PATH) and the Android SDK (`C:\Users\Arthur\AppData\Local\Android\Sdk`, via `local.properties`). There are **no committed wrapper JAR/scripts** (only `gradle/wrapper/gradle-wrapper.properties`), so `./gradlew` does not exist — use the installed Gradle: `gradle :app:assembleDebug`. (Full machine/toolchain details live in the global `~/.config/opencode/AGENTS.md`; the emulator AVD `cofcup_test` is used for manual runs.)
+- CLI builds **do work locally**: the machine has JDK 17 (Temurin), Gradle 9.6.0 (`C:\Gradle\...`, `gradle` on PATH) and the Android SDK (`C:\Users\Arthur\AppData\Local\Android\Sdk`, via `local.properties`). The Gradle **wrapper is committed** (`gradlew`, `gradlew.bat`, `gradle/wrapper/*`), so `.\gradlew :app:assembleDebug` works; the installed `gradle` works too. (Full machine/toolchain details live in the global `~/.config/opencode/AGENTS.md`; the emulator AVD `cofcup_test` is used for manual runs.)
 - CI (`.github/workflows/build.yml`) installs JDK 17 (Temurin) + Android SDK + Gradle 9.6.0, then runs:
   - `gradle :app:assembleDebug`
   - `gradle :app:testDebugUnitTest`
 - Unit tests (pure JUnit, `app/src/test`, run all): `CuppingMathTest`,
   `CupColorsTest`, `HistoryCodecTest`, `BlindRedactionTest`, `PlanConversionTest`.
-  A single class can be selected with `--tests "app.cofcup.CuppingMathTest"`.
+  A single class can be selected with `--tests "app.cupnlog.CuppingMathTest"`.
   `HistoryCodecTest` uses the test-only `org.json:json` dependency (same API as
   the Android runtime).
 
@@ -39,7 +39,7 @@
 
 ## Persistence & UI structure
 
-- History is a JSON array in **DataStore** (`CuppingRepository`, store `cofcup_store`, key `history_v1`) parsed with `org.json`; decode failures return an empty list; capped at 200 sessions. The sound/vibration chime toggles live in the same store (`sound_on_next_step` on by default, `vibrate_on_next_step` off). There is no Room/DB and no serialization plugin — don't add either for this.
+- History is a JSON array in **DataStore** (`CuppingRepository`, store `cupnlog_store`, key `history_v1`) parsed with `org.json`; decode failures return an empty list; capped at 200 sessions. The sound/vibration chime toggles live in the same store (`sound_on_next_step` on by default, `vibrate_on_next_step` off). There is no Room/DB and no serialization plugin — don't add either for this.
 - Screens are one file per screen in `ui/`, orchestrated by a single `CuppingViewModel` (`Screen` sealed class + `handleBack()`); no navigation-compose dependency. Settings is only reachable from the live-session screens (gear icon; back returns to LiveSession).
 - On Home the launcher icon is rendered via AndroidView + ImageView: `painterResource()` would **crash** on the adaptive `mipmap` icon (this exact crash was fixed once — don't revert it).
 - Manifest locks the activity to portrait; the session screen sets `view.keepScreenOn`; the only permission is VIBRATE (chime). All intentional for a hands-on, offline timer.

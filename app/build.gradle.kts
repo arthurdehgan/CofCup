@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "app.cofcup"
+    namespace = "app.cupnlog"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "app.cofcup"
+        applicationId = "app.cupnlog"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

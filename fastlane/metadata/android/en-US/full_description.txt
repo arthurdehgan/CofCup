@@ -1,8 +1,8 @@
-CofCup guides you through a coffee cupping session, step by step, with timers that follow the SCA cupping protocol.
+Cup 'n Log guides you through a coffee cupping session, step by step, with timers that follow the SCA cupping protocol.
 
 <b>What it does</b>
 
-• Decide your cup size and how many coffees to cup. CofCup tells you how much coffee to grind per cup and how much water to boil, based on the SCA cupping ratio.
+• Decide your cup size and how many coffees to cup. Cup 'n Log tells you how much coffee to grind per cup and how much water to boil, based on the SCA cupping ratio.
 • Give each coffee a name, a number and a colour, so you can identify every cup at the end.
 • Run the cupping session guided by SCA guidelines: the timer walks you through each step of the protocol, with a chime when a new step begins and the option to skip steps.
 • Past sessions will be saved to a history for later review.

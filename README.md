@@ -1,4 +1,4 @@
-# CofCup ☕
+# Cup 'n Log ☕
 
 A free, open-source Android app that guides you through a **coffee cupping session**, step by step, with timers.
 
