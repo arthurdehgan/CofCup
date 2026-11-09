@@ -10,10 +10,14 @@ import app.cofcup.data.CuppingPlan
 import app.cofcup.data.CuppingTimeline
 import app.cofcup.data.SavedSession
 import java.util.UUID
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -63,6 +67,18 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
 
     private val _showLeaveDialog = MutableStateFlow(false)
     val showLeaveDialog: StateFlow<Boolean> = _showLeaveDialog.asStateFlow()
+
+    private val _stepChimes = MutableSharedFlow<Unit>(
+        replay = 0,
+        extraBufferCapacity = 8,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+
+    /** Emits every time the timer itself advances into a new step; skipped steps stay silent. */
+    val stepChimes: SharedFlow<Unit> = _stepChimes.asSharedFlow()
+
+    /** Start second of the last step whose entry was accounted for (chimed or skipped). */
+    private var announcedStepStartSec = 0L
 
     val history: StateFlow<List<SavedSession>> =
         repository.sessions.stateIn(
@@ -203,6 +219,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         if (_live.value == null) {
             _live.value = LiveSession(plan = _draft.value.toPlan())
             _elapsedMs.value = 0
+            announcedStepStartSec = 0
         }
         _screen.value = Screen.LiveSession
     }
@@ -224,6 +241,9 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         if (targetMs <= elapsedMs) return
         _live.update { it?.copy(extraOffsetMs = it.extraOffsetMs + (targetMs - elapsedMs)) }
         _elapsedMs.value = targetMs
+        // The chime is reserved for timer-driven advances; account for the skipped
+        // step here so the ticker stays silent about it.
+        announcedStepStartSec = next.startSec
     }
 
     /** Called when the "Done" step becomes current; saves the session once. */
@@ -265,6 +285,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _live.value = null
         _elapsedMs.value = 0
         _showLeaveDialog.value = false
+        announcedStepStartSec = 0
     }
 
     private fun refreshElapsed() {
@@ -276,5 +297,15 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         val elapsed = (SystemClock.elapsedRealtime() - startedAt + session.extraOffsetMs)
             .coerceAtLeast(0)
         if (elapsed != _elapsedMs.value) _elapsedMs.value = elapsed
+        announceChimeFor(elapsed)
+    }
+
+    /** Chimes when the timer's own passage enters a new step (never for skips). */
+    private fun announceChimeFor(elapsedMs: Long) {
+        val stepStartSec = CuppingTimeline.stepAt(elapsedMs / 1000).startSec
+        if (stepStartSec == announcedStepStartSec) return
+        announcedStepStartSec = stepStartSec
+        // 0:00 is the timer start itself, not a step advance — stay silent there.
+        if (stepStartSec > 0) _stepChimes.tryEmit(Unit)
     }
 }

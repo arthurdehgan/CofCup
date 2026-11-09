@@ -1,5 +1,7 @@
 package app.cofcup.ui
 
+import android.media.AudioAttributes
+import android.media.SoundPool
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,13 +41,16 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.cofcup.R
 import app.cofcup.data.CuppingMath
 import app.cofcup.data.CuppingPlan
 import app.cofcup.data.CuppingStep
@@ -72,6 +77,28 @@ fun SessionScreen(vm: CuppingViewModel) {
     DisposableEffect(Unit) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
+    }
+
+    // A soft chime whenever the timer advances to the next step. The ViewModel
+    // only emits for timer-driven advances, so "Skip step" stays silent.
+    val context = LocalContext.current
+    val soundPool = remember {
+        SoundPool.Builder()
+            .setMaxStreams(1)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build(),
+            )
+            .build()
+    }
+    val chimeId = remember(soundPool) { soundPool.load(context, R.raw.step_ding, 1) }
+    DisposableEffect(Unit) {
+        onDispose { soundPool.release() }
+    }
+    LaunchedEffect(soundPool, chimeId) {
+        vm.stepChimes.collect { soundPool.play(chimeId, 0.55f, 0.55f, 1, 0, 1f) }
     }
 
     val running = session.startedAtMs != null
