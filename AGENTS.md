@@ -39,5 +39,5 @@
 
 ## Commit hygiene
 
-- The user tests manually and often has **uncommitted local fixes** in the tree. Commit those as their own commit **before** starting your changes (see `4d388fd`), then commit your work separately.
+- The user tests manually and often has **uncommitted local fixes** in the tree. Commit those as their own commit **before** starting your changes (see the "manual testing fixes" commit), then commit your work separately.
 - Repo-local git identity is a placeholder (`Arthur` / noreply email) set only after the initial commit; keep using it unless the user changes it.
