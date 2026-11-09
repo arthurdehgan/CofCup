@@ -196,6 +196,39 @@ fun CoffeeListCard(coffees: List<CoffeeEntry>, title: String = "Coffee identific
     }
 }
 
+/** Blind, un-revealed coffee list: positions only ("Cup 1…N") — no names,
+ *  colours or numbers anywhere, including content descriptions. */
+@Composable
+fun BlindCoffeeListCard(cupCount: Int, title: String = "Coffee identification") {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            repeat(cupCount.coerceAtLeast(0)) { index ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SwatchCircle(
+                        colorArgb = CoffeeEntry.FALLBACK_COLOR,
+                        size = 40.dp,
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        "Cup ${index + 1}",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+            }
+        }
+    }
+}
+
 /** A reusable confirmation dialog (used for discarding and deleting). */
 @Composable
 fun ConfirmDialog(

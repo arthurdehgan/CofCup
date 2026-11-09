@@ -123,3 +123,14 @@ data class SavedSession(
     /** All participants' ratings keyed by raterId (see [CupRating.raterId]). */
     val ratings: List<CupRating> = emptyList(),
 )
+
+/**
+ * Planned→done conversion (user decision 3): when a run started from a planned
+ * session reaches Done, the result overwrites the SAME row — same id and
+ * createdAt, status flips to DONE — carrying the plan the run actually used and
+ * the ratings captured during it. No second artifact is ever created.
+ */
+fun SavedSession.toCompleted(
+    plan: CuppingPlan,
+    ratings: List<CupRating> = emptyList(),
+): SavedSession = copy(plan = plan, status = SessionStatus.DONE, ratings = ratings)

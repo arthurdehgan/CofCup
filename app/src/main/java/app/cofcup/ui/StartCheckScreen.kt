@@ -43,6 +43,7 @@ import app.cofcup.ui.components.StatLine
 @Composable
 fun StartCheckScreen(vm: CuppingViewModel) {
     val draft by vm.draft.collectAsState()
+    val plannedRunSource by vm.plannedRunSource.collectAsState()
     val plan = draft.toPlan()
 
     Scaffold(
@@ -131,11 +132,24 @@ fun StartCheckScreen(vm: CuppingViewModel) {
                 Text("Start cupping", fontWeight = FontWeight.Bold)
             }
 
-            TextButton(
-                onClick = { vm.handleBack() },
+            Row(
                 modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text("Back")
+                TextButton(
+                    onClick = { vm.handleBack() },
+                ) {
+                    Text("Back")
+                }
+                // Hidden when running an existing saved setup: that row already
+                // exists and the run will convert it to done on completion.
+                if (plannedRunSource == null) {
+                    TextButton(
+                        onClick = { vm.saveSetup() },
+                    ) {
+                        Text("Save setup")
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
         }

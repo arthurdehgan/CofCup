@@ -12,7 +12,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.cofcup.data.CuppingMath
 import app.cofcup.data.SavedSession
+import app.cofcup.data.SessionStatus
+import app.cofcup.ui.components.BlindCoffeeListCard
 import app.cofcup.ui.components.CoffeeListCard
 import app.cofcup.ui.components.ConfirmDialog
 import app.cofcup.ui.components.StatLine
@@ -54,10 +58,12 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
         return
     }
 
+    val planned = session.status == SessionStatus.PLANNED
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Past session") },
+                title = { Text(if (planned) "Saved setup" else "Past session") },
                 navigationIcon = {
                     IconButton(onClick = { vm.handleBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -90,6 +96,19 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
             )
             SessionSummaryCard(session)
             Spacer(modifier = Modifier.height(16.dp))
+            if (planned) {
+                Button(
+                    onClick = { vm.startPlannedRun(session.id, backTo = Screen.History) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Run this setup", fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
             if (session.plan.coffees.isEmpty()) {
                 // Quick-start ("Empty Cupping Session"): no cups were labelled.
                 OutlinedCard(modifier = Modifier.fillMaxWidth()) {
@@ -100,6 +119,9 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
                         modifier = Modifier.padding(16.dp),
                     )
                 }
+            } else if (session.blind && session.revealedAtMs == null) {
+                // Blind, not yet revealed: positions only — never name/colour/number.
+                BlindCoffeeListCard(cupCount = session.plan.cupCount)
             } else {
                 CoffeeListCard(coffees = session.plan.coffees)
             }

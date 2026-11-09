@@ -1,6 +1,7 @@
 package app.cofcup.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.cofcup.data.SavedSession
+import app.cofcup.data.SessionStatus
 import app.cofcup.ui.components.ConfirmDialog
 import app.cofcup.ui.components.formatDateTime
 import app.cofcup.ui.components.sessionSummary
@@ -133,23 +135,51 @@ private fun HistoryItem(session: SavedSession, onClick: () -> Unit, onDelete: ()
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    formatDateTime(session.createdAtMs),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        formatDateTime(session.createdAtMs),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    if (session.status == SessionStatus.PLANNED) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Planned",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clip(MaterialTheme.shapes.small)
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = MaterialTheme.shapes.small,
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(2.dp))
+                val blindHidden = session.blind && session.revealedAtMs == null
                 Text(
-                    // Quick-start sessions are stored with no cups and no coffees.
-                    if (session.plan.coffees.isEmpty()) {
-                        "Empty Cupping Session"
-                    } else {
-                        sessionSummary(session.plan.cupCount, session.plan.cupSizeMl)
+                    // Quick-start sessions are stored with no cups and no coffees;
+                    // blind rows show a neutral label until an explicit reveal.
+                    when {
+                        session.plan.coffees.isEmpty() -> "Empty Cupping Session"
+                        session.status == SessionStatus.PLANNED && blindHidden -> {
+                            "Blind setup · ${session.plan.cupCount} cup" +
+                                if (session.plan.cupCount == 1) "" else "s"
+                        }
+                        blindHidden -> {
+                            "Blind cupping · ${session.plan.cupCount} cup" +
+                                if (session.plan.cupCount == 1) "" else "s"
+                        }
+                        else -> sessionSummary(session.plan.cupCount, session.plan.cupSizeMl)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (session.plan.coffees.isNotEmpty()) {
+                if (session.plan.coffees.isNotEmpty() && !blindHidden) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         session.plan.coffees.forEach { coffee ->

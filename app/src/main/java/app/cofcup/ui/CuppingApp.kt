@@ -19,7 +19,7 @@ fun CuppingApp() {
         Screen.Home -> HomeScreen(vm)
         Screen.Setup -> SetupScreen(vm)
         Screen.LabelCoffees -> LabelScreen(vm)
-        Screen.StartCheck -> StartCheckScreen(vm)
+        is Screen.StartCheck -> StartCheckScreen(vm)
         Screen.LiveSession -> SessionScreen(vm)
         Screen.Settings -> SettingsScreen(vm)
         Screen.History -> HistoryScreen(vm)

@@ -9,6 +9,8 @@ import app.cofcup.data.CuppingDraft
 import app.cofcup.data.CuppingPlan
 import app.cofcup.data.CuppingTimeline
 import app.cofcup.data.SavedSession
+import app.cofcup.data.SessionStatus
+import app.cofcup.data.toCompleted
 import java.util.UUID
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -29,7 +32,11 @@ sealed interface Screen {
     data object Home : Screen
     data object Setup : Screen
     data object LabelCoffees : Screen
-    data object StartCheck : Screen
+
+    /** `returnTo` keeps `handleBack()` sensible when StartCheck is opened
+     *  directly (e.g. running a saved setup) instead of through the setup flow. */
+    data class StartCheck(val returnTo: Screen? = null) : Screen
+
     data object LiveSession : Screen
     data object Settings : Screen
     data object History : Screen
@@ -45,6 +52,12 @@ data class LiveSession(
     val extraOffsetMs: Long = 0,
     /** True once the "Done" step was reached and the session saved. */
     val finished: Boolean = false,
+    /**
+     * Id of the planned session row this run came from; on Done, that row is
+     * converted in place (same id/createdAt, status → done). Null for runs
+     * started without a saved setup behind them.
+     */
+    val plannedSessionId: String? = null,
 )
 
 private fun Application.appRepository() =
@@ -69,6 +82,22 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
 
     private val _showLeaveDialog = MutableStateFlow(false)
     val showLeaveDialog: StateFlow<Boolean> = _showLeaveDialog.asStateFlow()
+
+    /**
+     * Id of the planned row the current StartCheck screen is about to run (set
+     * when a saved-setup chip or a "Run this setup" button was tapped). While
+     * this is non-null, StartCheck hides its "Save setup" action — the row
+     * already exists and the run will convert it on Done.
+     */
+    private val _plannedRunSource = MutableStateFlow<String?>(null)
+    val plannedRunSource: StateFlow<String?> = _plannedRunSource.asStateFlow()
+
+    /**
+     * Id of the planned row being edited: a Home-chip edit loads its draft and
+     * remembers this, so a later "Save setup" updates the SAME row instead of
+     * creating a duplicate. Cleared when a fresh setup is opened from Home.
+     */
+    private var editingPlannedSessionId: String? = null
 
     private val _stepChimes = MutableSharedFlow<Unit>(
         replay = 0,
@@ -175,13 +204,18 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _screen.value = Screen.LabelCoffees
     }
 
-    /** "Set up cupping" on the home screen. */
+    /** "Set up cupping" on the home screen — a fresh setup, no planned row behind it. */
     fun openSetup() {
+        editingPlannedSessionId = null
+        _plannedRunSource.value = null
         _screen.value = Screen.Setup
     }
 
     fun openStartCheck() {
-        _screen.value = Screen.StartCheck
+        // The guided flow reaches StartCheck through LabelCoffees; a planned-run
+        // StartCheck is opened directly by [startPlannedRun] and never gets here.
+        _plannedRunSource.value = null
+        _screen.value = Screen.StartCheck(returnTo = Screen.LabelCoffees)
     }
 
     fun openHistory() {
@@ -212,8 +246,15 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 _screen.value = Screen.Setup
                 true
             }
-            Screen.StartCheck -> {
-                _screen.value = Screen.LabelCoffees
+            is Screen.StartCheck -> {
+                val fromPlannedRun = _plannedRunSource.value != null
+                if (fromPlannedRun) {
+                    // "Back" on a planned-run check is not the discard contract
+                    // that ends a session — it simply leaves the run, and the
+                    // planned row stays intact for later.
+                    _plannedRunSource.value = null
+                }
+                _screen.value = current.returnTo ?: Screen.LabelCoffees
                 true
             }
             Screen.LiveSession -> {
@@ -259,7 +300,11 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     /** Called from the "Start cupping" button on the pre-start screen. */
     fun startLiveSession() {
         if (_live.value == null) {
-            _live.value = LiveSession(plan = _draft.value.toPlan())
+            _live.value = LiveSession(
+                plan = _draft.value.toPlan(),
+                // Run started from a planned row: Done converts that row in place.
+                plannedSessionId = _plannedRunSource.value ?: editingPlannedSessionId,
+            )
             _elapsedMs.value = 0
             announcedStepStartSec = 0
         }
@@ -278,6 +323,8 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
      *  A session completed this way is stored in history as an "Empty Cupping Session". */
     fun quickStartCupping() {
         if (_live.value == null) {
+            // Quick-start has no saved setup behind it, ever.
+            _plannedRunSource.value = null
             _live.value = LiveSession(
                 plan = CuppingPlan(
                     cupSizeMl = _draft.value.cupSizeMl,
@@ -312,12 +359,23 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         val session = _live.value ?: return
         if (session.finished) return
         _live.update { it?.copy(finished = true) }
-        val saved = SavedSession(
-            id = UUID.randomUUID().toString(),
-            createdAtMs = System.currentTimeMillis(),
-            plan = session.plan,
-        )
-        viewModelScope.launch { repository.save(saved) }
+        val plannedId = session.plannedSessionId
+        viewModelScope.launch {
+            // Done with a saved setup behind the run: convert that planned row
+            // in place (same id, same createdAt, status → done). If the row was
+            // deleted meanwhile, fall back to a fresh history row.
+            val planned = plannedId?.let { id ->
+                repository.sessions.first()
+                    .firstOrNull { it.id == id && it.status == SessionStatus.PLANNED }
+            }
+            val saved = planned?.toCompleted(session.plan)
+                ?: SavedSession(
+                    id = UUID.randomUUID().toString(),
+                    createdAtMs = System.currentTimeMillis(),
+                    plan = session.plan,
+                )
+            repository.save(saved)
+        }
     }
     fun goHomeAfterSession() {
         resetLiveSession()
@@ -338,6 +396,72 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     // ------------------------------------------------------------------
+    // Planned sessions (saved setups)
+    // ------------------------------------------------------------------
+
+    /** Serializes the current draft into a `planned` row. When the draft was
+     *  loaded from a planned chip edit, the SAME row is updated instead. */
+    fun saveSetup() {
+        val plan = _draft.value.toPlan()
+        val editingId = editingPlannedSessionId
+        viewModelScope.launch {
+            val original = if (editingId != null) {
+                repository.sessions.first().firstOrNull { it.id == editingId }
+            } else {
+                null
+            }
+            val session = original
+                ?: SavedSession(
+                    id = UUID.randomUUID().toString(),
+                    createdAtMs = System.currentTimeMillis(),
+                    plan = plan,
+                    status = SessionStatus.PLANNED,
+                )
+            repository.save(session.copy(plan = plan, status = SessionStatus.PLANNED))
+            editingPlannedSessionId = null
+            _screen.value = Screen.Home
+        }
+    }
+
+    /** Tap on a Home saved-setup chip (or "Run this setup" on the detail):
+     *  loads the planned plan into the draft and jumps straight to StartCheck,
+     *  with its existing "one big Start button" contract. */
+    fun startPlannedRun(sessionId: String, backTo: Screen = Screen.Home) {
+        if (_live.value != null) return
+        viewModelScope.launch {
+            val session = repository.sessions.first()
+                .firstOrNull { it.id == sessionId && it.status == SessionStatus.PLANNED }
+                ?: return@launch
+            _draft.value = CuppingDraft(
+                cupSizeMl = session.plan.cupSizeMl,
+                cupCount = session.plan.cupCount,
+                coffees = session.plan.coffees,
+            )
+            editingPlannedSessionId = null
+            _plannedRunSource.value = sessionId
+            _screen.value = Screen.StartCheck(returnTo = backTo)
+        }
+    }
+
+    /** Chip overflow "Edit": loads the planned plan into the draft and opens
+     *  Setup, remembering the row so [saveSetup] overwrites it. */
+    fun editPlannedSetup(sessionId: String) {
+        viewModelScope.launch {
+            val session = repository.sessions.first()
+                .firstOrNull { it.id == sessionId && it.status == SessionStatus.PLANNED }
+                ?: return@launch
+            _draft.value = CuppingDraft(
+                cupSizeMl = session.plan.cupSizeMl,
+                cupCount = session.plan.cupCount,
+                coffees = session.plan.coffees,
+            )
+            editingPlannedSessionId = sessionId
+            _plannedRunSource.value = null
+            _screen.value = Screen.Setup
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Internals
     // ------------------------------------------------------------------
 
@@ -345,6 +469,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _live.value = null
         _elapsedMs.value = 0
         _showLeaveDialog.value = false
+        _plannedRunSource.value = null
         announcedStepStartSec = 0
     }
 
