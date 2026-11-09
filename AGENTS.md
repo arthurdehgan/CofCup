@@ -2,7 +2,7 @@
 
 ## Repo location (important)
 
-- OpenCode sessions here often start in `C:\Users\Arthur\Documents\Default Project`, which is **empty**. The actual repo is **`C:\Users\Arthur\GitHub\CofCup`** — work there.
+- This is the **`dev` branch worktree** at `C:\Users\Arthur\GitHub\CofCup_dev`; the `main` checkout lives at `C:\Users\Arthur\GitHub\CofCup`. Work in the checkout that matches your branch, and don't switch branches in the other one (both share the same `.git`, so a branch can only be checked out in one worktree at a time).
 
 ## Build & test
 
