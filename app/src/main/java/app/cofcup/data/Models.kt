@@ -58,11 +58,11 @@ data class CuppingDraft(
 
     companion object {
         const val DEFAULT_CUP_SIZE = 150
-        const val DEFAULT_CUP_COUNT = 3
-        const val MIN_CUP_SIZE = 50
-        const val MAX_CUP_SIZE = 500
+        const val DEFAULT_CUP_COUNT = 4
+        const val MIN_CUP_SIZE = 100
+        const val MAX_CUP_SIZE = 400
         const val MIN_CUPS = 1
-        const val MAX_CUPS = 12
+        const val MAX_CUPS = 16
     }
 }
 
