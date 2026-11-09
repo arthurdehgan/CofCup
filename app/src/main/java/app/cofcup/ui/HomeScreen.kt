@@ -111,6 +111,29 @@ fun HomeScreen(vm: CuppingViewModel) {
 
             Spacer(modifier = Modifier.weight(1f))
 
+            if (plannedSetups.isNotEmpty()) {
+                Text(
+                    "Saved setups",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(plannedSetups.size) { index ->
+                        PlannedSetupChip(
+                            session = plannedSetups[index],
+                            onRun = { vm.startPlannedRun(plannedSetups[index].id) },
+                            onEdit = { vm.editPlannedSetup(plannedSetups[index].id) },
+                            onDelete = { vm.deleteSession(plannedSetups[index].id) },
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             Button(
                 onClick = { vm.quickStartCupping() },
                 modifier = Modifier
@@ -145,29 +168,6 @@ fun HomeScreen(vm: CuppingViewModel) {
             //     textAlign = TextAlign.Center,
             //     modifier = Modifier.fillMaxWidth(),
             // )
-            Spacer(modifier = Modifier.height(8.dp))
-            if (plannedSetups.isNotEmpty()) {
-                Text(
-                    "Saved setups",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(plannedSetups.size) { index ->
-                        PlannedSetupChip(
-                            session = plannedSetups[index],
-                            onRun = { vm.startPlannedRun(plannedSetups[index].id) },
-                            onEdit = { vm.editPlannedSetup(plannedSetups[index].id) },
-                            onDelete = { vm.deleteSession(plannedSetups[index].id) },
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
