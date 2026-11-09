@@ -109,16 +109,16 @@ fun HomeScreen(vm: CuppingViewModel) {
                     fontWeight = FontWeight.SemiBold,
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Starting without setup saves the session to history as an " +
-                    "\u201cEmpty Cupping Session\u201d.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+            // Spacer(modifier = Modifier.height(8.dp))
+            // Text(
+            //     " " +
+            //         "\u201cEmpty Cupping Session\u201d.",
+            //     style = MaterialTheme.typography.bodySmall,
+            //     color = MaterialTheme.colorScheme.onSurfaceVariant,
+            //     textAlign = TextAlign.Center,
+            //     modifier = Modifier.fillMaxWidth(),
+            // )
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
