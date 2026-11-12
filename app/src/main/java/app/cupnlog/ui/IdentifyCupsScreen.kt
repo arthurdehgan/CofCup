@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cupnlog.data.CoffeeEntry
 import app.cupnlog.data.SavedSession
@@ -189,12 +190,16 @@ private fun CupAssignRow(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // "Cup N" leads, and the slot (swatch + coffee name, or the empty
+            // placeholder) sits right beside it on the left of the row (user
+            // decision). The clear button stays at the far edge; a long name
+            // ellipsizes instead of pushing it off.
             Text(
                 "Cup ${position + 1}",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
             )
+            Spacer(modifier = Modifier.width(12.dp))
             if (assignedCoffee != null) {
                 SwatchCircle(
                     colorArgb = assignedCoffee.colorArgb,
@@ -205,6 +210,9 @@ private fun CupAssignRow(
                 Text(
                     assignedCoffee.displayName,
                     style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
             } else {
                 Text(
@@ -212,6 +220,7 @@ private fun CupAssignRow(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(modifier = Modifier.weight(1f))
             }
             IconButton(onClick = onClear, enabled = assignedCoffee != null) {
                 Icon(
