@@ -4,8 +4,8 @@ Planning document. This is the reference for the ongoing implementation; it is
 deliberately self-contained so it makes sense without the brainstorming
 conversation behind it.
 
-**Status (2026-11-09).** Phase 0 and phase 1 are implemented and committed
-(`7efd0ec`, `e63da8e`). Phases 2–4 remain.
+**Status (2026-11-11).** Phases 0, 1 and 2 are implemented and committed
+(`7efd0ec`, `e63da8e`, `9d812da`). Phases 3–4 remain.
 
 **v2 note.** This is the GLM plan after reconciliation with
 `feature_plan_deepseek.md`. Deepseek's plan was reviewed against the actual code;
