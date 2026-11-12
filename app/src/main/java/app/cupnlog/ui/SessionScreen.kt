@@ -185,6 +185,10 @@ fun SessionScreen(vm: CuppingViewModel) {
                     elapsedSec = elapsedSec,
                     plannedSetups = plannedSetups,
                     selectedSetupId = session.plannedSessionId,
+                    // The picker is a quick-start convenience: a run started
+                    // through the setup flow already IS a setup, and a
+                    // planned run already has its row.
+                    showSetupPicker = session.fromQuickStart,
                 )
                 else -> RunningContent(plan = session.plan, elapsedSec = elapsedSec, current = current)
             }
@@ -210,10 +214,10 @@ fun SessionScreen(vm: CuppingViewModel) {
     }
 }
 
-/** Timer not running yet: instructions, saved setups to pick from, the big
- *  Start button, and a step preview. The setup picker covers the quick-start
- *  case (started straight from the timer with no cups) plus swapping setups
- *  before the timer starts. */
+/** Timer not running yet: instructions, the big Start button, and a step
+ *  preview. The saved-setup picker ([showSetupPicker]) appears only on a
+ *  quick-started run (straight from the timer with no cups) — it covers
+ *  picking a setup plus swapping/cancelling a pick before the timer starts. */
 @Composable
 private fun ReadyToStartContent(
     vm: CuppingViewModel,
@@ -221,6 +225,7 @@ private fun ReadyToStartContent(
     elapsedSec: Long,
     plannedSetups: List<SavedSession>,
     selectedSetupId: String?,
+    showSetupPicker: Boolean,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -239,7 +244,7 @@ private fun ReadyToStartContent(
         }
     }
     Spacer(modifier = Modifier.height(16.dp))
-    if (plannedSetups.isNotEmpty()) {
+    if (showSetupPicker && plannedSetups.isNotEmpty()) {
         Text(
             "Saved setups",
             style = MaterialTheme.typography.labelLarge,

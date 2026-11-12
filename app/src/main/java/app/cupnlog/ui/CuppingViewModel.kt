@@ -78,6 +78,14 @@ data class LiveSession(
      * screen and the Ratings-exit persist point at the exact saved row.
      */
     val savedSessionId: String? = null,
+    /**
+     * True for the quick-started empty session ("Start Cupping" from Home).
+     * The pre-start screen shows its saved-setup picker only then: a run
+     * started through the setup flow already IS a setup, and a planned run
+     * already has its row. Sticky across setup picks so the picker stays
+     * reachable to swap or cancel a pick.
+     */
+    val fromQuickStart: Boolean = false,
 )
 
 private fun Application.appRepository() =
@@ -421,6 +429,10 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                     // planned row stays intact for later.
                     _plannedRunSource.value = null
                 }
+                // Leaving StartCheck backwards abandons any unstarted run
+                // still in memory (e.g. after returning here from the
+                // pre-start screen); a fresh start recreates it from the draft.
+                _live.value?.let { if (it.startedAtMs == null && !it.finished) resetLiveSession() }
                 _screen.value = current.returnTo ?: Screen.LabelCoffees
                 true
             }
@@ -428,10 +440,18 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 val session = _live.value
                 val startedAndNotFinished =
                     session != null && session.startedAtMs != null && !session.finished
-                if (startedAndNotFinished) {
-                    _showLeaveDialog.value = true
-                } else {
-                    discardLiveSession()
+                val freshUnstartedSetup =
+                    session != null && session.startedAtMs == null && !session.finished &&
+                        session.plan.cupCount > 0 && session.plannedSessionId == null
+                when {
+                    startedAndNotFinished -> _showLeaveDialog.value = true
+                    // Back from an unstarted run that carries a fresh setup
+                    // (the guided flow's just-created one) returns to the
+                    // ready-to-cup screen, where the setup can still be saved
+                    // — nothing is discarded yet.
+                    freshUnstartedSetup ->
+                        _screen.value = Screen.StartCheck(returnTo = Screen.LabelCoffees)
+                    else -> discardLiveSession()
                 }
                 true
             }
@@ -480,7 +500,12 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
 
     /** Called from the "Start cupping" button on the pre-start screen. */
     fun startLiveSession() {
-        if (_live.value == null) {
+        val current = _live.value
+        // (Re)create for every (re)start of an unstarted run: returning from
+        // the pre-start screen to StartCheck and starting again must build
+        // the session from the draft as it is now. A running or finished
+        // session is never touched here.
+        if (current == null || current.startedAtMs == null) {
             _live.value = LiveSession(
                 plan = _draft.value.toPlan(),
                 // Run started from a planned row: Done converts that row in place.
@@ -504,8 +529,10 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     /** "Start Cupping" on the home screen: straight to the timer, with no cups set up.
      *  A session completed this way is stored in history as an "Empty Cupping Session". */
     fun quickStartCupping() {
-        if (_live.value == null) {
-            // Quick-start has no saved setup behind it, ever.
+        val current = _live.value
+        // Quick-start has no saved setup behind it, ever; a stale unstarted
+        // run left over from earlier navigation is replaced, not resurrected.
+        if (current == null || current.startedAtMs == null) {
             _plannedRunSource.value = null
             _live.value = LiveSession(
                 plan = CuppingPlan(
@@ -513,6 +540,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                     cupCount = 0,
                     coffees = emptyList(),
                 ),
+                fromQuickStart = true,
             )
             _elapsedMs.value = 0
             announcedStepStartSec = 0
@@ -659,6 +687,10 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             // planned row and toggling blind off updates the SAME row's flag.
             repository.save(session.copy(plan = plan, status = SessionStatus.PLANNED, blind = plan.blind))
             editingPlannedSessionId = null
+            // Saving leaves for Home: any unstarted run still holding this
+            // draft in memory is void now — quick-starting later must not
+            // resurrect it.
+            _live.value?.let { if (it.startedAtMs == null && !it.finished) resetLiveSession() }
             _screen.value = Screen.Home
         }
     }
