@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.cupnlog.data.CoffeeEntry
 import app.cupnlog.data.CupColors
+import app.cupnlog.data.invalidLabelIndices
 import app.cupnlog.ui.components.SwatchCircle
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,9 +63,9 @@ fun LabelScreen(vm: CuppingViewModel) {
                 .verticalScroll(rememberScrollState()),
         ) {
             Text(
-                "Give each cup a colour, a number and a name. " +
-                    "After the cupping you will identify the coffees by " +
-                    "colour and number.",
+                "Give each coffee a colour, a short label and a name. Write the label " +
+                    "under its cup. After the cupping you will identify each cup by " +
+                    "its label.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 12.dp),
@@ -119,8 +120,21 @@ fun LabelScreen(vm: CuppingViewModel) {
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
+            // Duplicate or blank labels would make the identification step
+            // ambiguous, so both exits stay gated on valid labels.
+            val invalidLabels = visibleCoffees.invalidLabelIndices()
+            if (invalidLabels.isNotEmpty()) {
+                Text(
+                    "Every cup needs a short label, and labels must not repeat.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
+
             Button(
                 onClick = { vm.openStartCheck() },
+                enabled = invalidLabels.isEmpty(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -136,6 +150,7 @@ fun LabelScreen(vm: CuppingViewModel) {
             // edited) and the app returns Home.
             FilledTonalButton(
                 onClick = { vm.saveSetup() },
+                enabled = invalidLabels.isEmpty(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

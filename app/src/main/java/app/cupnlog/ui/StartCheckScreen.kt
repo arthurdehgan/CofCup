@@ -94,7 +94,14 @@ fun StartCheckScreen(vm: CuppingViewModel) {
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "Your cups on the table:",
+                        // Blind cupping: the labels go on slips under the cups,
+                        // so this line becomes a reminder instead of a table
+                        // description. No how-to wording (user decision).
+                        if (plan.blind) {
+                            "Make sure each cup is labeled correctly."
+                        } else {
+                            "Your cups on the table:"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

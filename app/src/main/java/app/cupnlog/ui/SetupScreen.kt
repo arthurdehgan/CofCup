@@ -146,8 +146,9 @@ fun SetupScreen(vm: CuppingViewModel) {
                 ) {
                     Text("Blind tasting", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Name of the coffees are hidden and replaces by Coffee 1, " +
-                            "Coffee 2, ... until the end of the cupping session.",
+                        "Each cup is labeled underneath and the cups get mixed, so you " +
+                            "don't know which is which. Coffee names appear only after " +
+                            "you identify each cup by its label.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
