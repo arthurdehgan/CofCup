@@ -1,8 +1,12 @@
 package app.cupnlog.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -35,7 +40,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.cupnlog.data.CupRating
 import app.cupnlog.data.CuppingPlan
 import app.cupnlog.data.RatingField
@@ -259,22 +266,61 @@ private fun YourRatingRow(cup: Int, plan: CuppingPlan, blind: Boolean, rating: C
             }
         }
         if (rating?.isRated == true) {
-            val attributes = RatingField.entries
-                .filter { it != RatingField.OVERALL }
-                .mapNotNull { field -> rating.scoreFor(field)?.let { "${field.label} $it" } }
-            if (attributes.isNotEmpty()) {
-                Text(
-                    attributes.joinToString(" \u00b7 "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Spacer(modifier = Modifier.height(8.dp))
+            // The six attribute scores as equal squares dividing the space
+            // below the coffee name; Overall stays beside the name.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                RatingField.entries
+                    .filter { it != RatingField.OVERALL }
+                    .forEach { field ->
+                        ScoreSquare(
+                            field = field,
+                            score = rating.scoreFor(field),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
             }
-            if (rating.notes.isNotBlank()) {
-                Text(
-                    rating.notes,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
+        }
+        if (rating?.notes?.isNotBlank() == true) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                rating.notes,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
+/** One attribute square: the score (or a quiet dash when unrated) with its
+ *  category label underneath, sized so six of them divide the row width. */
+@Composable
+private fun ScoreSquare(field: RatingField, score: Int?, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.aspectRatio(1f),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                score?.toString() ?: "\u2014",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                field.label,
+                fontSize = 9.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
