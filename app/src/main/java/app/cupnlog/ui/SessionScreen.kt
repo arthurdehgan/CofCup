@@ -107,7 +107,9 @@ fun SessionScreen(vm: CuppingViewModel) {
                     }
                 },
                 actions = {
-                    if (session.plan.cupCount > 0) {
+                    // "Rate" only exists once the timer is running: the pre-start
+                    // "Cupping" screen (with a setup picked) has nothing to rate yet.
+                    if (running && session.plan.cupCount > 0) {
                         AssistChip(
                             onClick = { vm.openRatings() },
                             label = { Text("Rate") },
