@@ -185,12 +185,11 @@ private fun PlannedSetupChip(
     var menuOpen by remember { mutableStateOf(false) }
     val blind = session.blind && session.revealedAtMs == null
     val label = when {
-        // Blind, un-revealed setups never lose their neutral label — the
-        // session name would not leak cup identity, but staying uniform
-        // keeps blind rows recognisable.
+        // The session name never leaks cup identity, so blind setups show it
+        // too; the neutral label is only the unnamed fallback.
+        session.plan.sessionName.isNotBlank() -> displaySessionName(session.plan.sessionName)
         blind -> "Blind setup · ${session.plan.cupCount} cup" +
             if (session.plan.cupCount == 1) "" else "s"
-        session.plan.sessionName.isNotBlank() -> displaySessionName(session.plan.sessionName)
         else -> "Cupping · ${session.plan.cupCount} cup" +
             if (session.plan.cupCount == 1) "" else "s"
     }
