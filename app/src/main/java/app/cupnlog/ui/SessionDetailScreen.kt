@@ -132,7 +132,7 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
                     )
                 }
             } else if (session.blind && session.revealedAtMs == null) {
-                // Blind, not yet revealed: positions only — never name/colour/number.
+                // Blind, not yet identified: positions only — never name/colour/label.
                 BlindCoffeeListCard(cupCount = session.plan.cupCount)
             } else {
                 CoffeeListCard(coffees = session.plan.coffees)

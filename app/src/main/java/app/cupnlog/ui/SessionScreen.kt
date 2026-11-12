@@ -279,7 +279,7 @@ private fun ReadyToStartContent(
 
 /** One saved setup on the pre-start "Cupping" screen: tap loads it into the
  *  session that is about to start (its planned row converts to done on Done).
- *  Blind, un-revealed rows show a neutral label — names, numbers and colours
+ *  Blind, un-revealed rows show a neutral label — names, labels and colours
  *  are never rendered here. */
 @Composable
 private fun SavedSetupPickerChip(

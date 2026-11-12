@@ -196,8 +196,8 @@ fun CoffeeListCard(coffees: List<CoffeeEntry>, title: String = "Coffee identific
     }
 }
 
-/** Blind, un-revealed coffee list: positions only ("Cup 1…N") — no names,
- *  colours or numbers anywhere, including content descriptions. */
+/** Blind, un-identified coffee list: positions only ("Cup 1…N") — no names,
+ *  colours or labels anywhere, including content descriptions. */
 @Composable
 fun BlindCoffeeListCard(cupCount: Int, title: String = "Coffee identification") {
     Card(modifier = Modifier.fillMaxWidth()) {

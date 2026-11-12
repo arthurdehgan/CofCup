@@ -57,7 +57,7 @@ data class CuppingDraft(
     val coffees: List<CoffeeEntry> = CupColors.defaultCoffees(),
     /** Optional display name of the cupping session; used for saved setups. */
     val sessionName: String = "",
-    /** Blind tasting: identities are hidden until an explicit reveal (phase 2). */
+    /** Blind tasting: identities are hidden until the cups are identified and revealed. */
     val blind: Boolean = false,
 ) {
     /** Immutable snapshot used while a session is running. */
@@ -165,7 +165,7 @@ data class SavedSession(
     val plan: CuppingPlan,
     /** Absent in old rows; legacy JSON decodes as DONE. */
     val status: SessionStatus = SessionStatus.DONE,
-    /** Blind tasting: identities are hidden until an explicit reveal. */
+    /** Blind tasting: identities are hidden until the cups are identified and revealed. */
     val blind: Boolean = false,
     /** Epoch ms of a blind identity reveal; null = not revealed. */
     val revealedAtMs: Long? = null,

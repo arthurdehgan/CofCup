@@ -177,7 +177,7 @@ private fun HistoryItem(session: SavedSession, onClick: () -> Unit, onDelete: ()
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     // Quick-start sessions are stored with no cups and no coffees;
-                    // blind rows show a neutral label until an explicit reveal.
+                    // blind rows show a neutral label until the cups are identified.
                     when {
                         session.plan.coffees.isEmpty() -> "Empty Cupping Session"
                         session.status == SessionStatus.PLANNED && blindHidden -> {

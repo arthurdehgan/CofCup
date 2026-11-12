@@ -61,7 +61,7 @@ import kotlin.math.roundToInt
  * and are persisted at Done (or on leaving this screen after Done).
  *
  * Blind sessions render positions only — "Cup N" — with no names, colours or
- * numbers anywhere (see `Blind.kt`); the session shell keeps chimes, the
+ * labels anywhere (see `Blind.kt`); the session shell keeps chimes, the
  * screen-on flag and the Done save working while this screen is on top.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -176,7 +176,7 @@ private fun CompactTimerCard(elapsedSec: Long, current: CuppingStep) {
 }
 
 /** One cup in the timeline order. Blind rows show "Cup N" with a neutral,
- *  numberless swatch; content descriptions carry no identity either. */
+ *  label-less swatch; content descriptions carry no identity either. */
 @Composable
 private fun CupRow(cup: Int, plan: CuppingPlan, rating: CupRating?, onClick: () -> Unit) {
     val coffee = plan.coffees.getOrNull(cup)
