@@ -146,8 +146,8 @@ fun SetupScreen(vm: CuppingViewModel) {
                 ) {
                     Text("Blind tasting", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Coffees stay anonymous. Cups appear as \u201cCup 1\u2026N\u201d " +
-                            "until you reveal them.",
+                        "Name of the coffees are hidden and replaces by Coffee 1, " +
+                            "Coffee 2, ... until the end of the cupping session.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -181,8 +181,7 @@ fun SetupScreen(vm: CuppingViewModel) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Based on the SCA cupping ratio: 8.25 g of coffee per 150 ml of water " +
-                            "(5.5 g per 100 ml).",
+                        "Based on the SCA cupping ratio: 5.5g per 100ml",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -224,15 +224,13 @@ private fun ReadyToStartContent(
                 if (plan.coffees.isEmpty()) {
                     // Quick start ("Empty Cupping Session"): no cups were set up.
                     "\u2022 Place your cups in a row, in your tasting order.\n" +
-                        "\u2022 Heat water to ~93 \u00b0C \u2014 the SCA ratio is 8.25 g " +
-                        "of coffee per 150 ml.\n" +
-                        "\u2022 Press START as water first hits the grounds \u2014 " +
-                        "that moment is 0:00."
+                        "\u2022 Heat water to ~93 \u00b0C.\n" +
+                        "\u2022 Press START as water first hits the grounds."
                 } else {
                     "\u2022 Place the ${plan.cupCount} cup${if (plan.cupCount == 1) "" else "s"} in a row, " +
                         "in your tasting order.\n" +
                         "\u2022 Grind the ground coffee into each cup and heat water to ~93 \u00b0C.\n" +
-                        "\u2022 Press START as water first hits the grounds \u2014 that moment is 0:00."
+                        "\u2022 Press START as water first hits the grounds."
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )
