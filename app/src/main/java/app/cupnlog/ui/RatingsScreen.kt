@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -281,9 +282,17 @@ private fun CupRatingEditor(
     val coffee = plan.coffees.getOrNull(cup)
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        // The window itself must not react to the keyboard: the system's
+        // default pan/resize re-pans on every keystroke and visibly jolts
+        // the slider list. With decorFitsSystemWindows off, the layout pads
+        // above the IME once (imePadding below) and stays put while typing.
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
     ) {
         Scaffold(
+            modifier = Modifier.imePadding(),
             topBar = {
                 TopAppBar(
                     title = {
@@ -356,7 +365,6 @@ private fun CupRatingEditor(
                         Text("Done")
                     }
                 }
-                Spacer(modifier = Modifier.navigationBarsPadding())
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
