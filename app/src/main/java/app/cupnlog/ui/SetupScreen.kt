@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.cupnlog.data.CuppingDraft
@@ -136,16 +137,16 @@ fun SetupScreen(vm: CuppingViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Cap the helper text width so it reads as a compact block
-                // instead of stretching the full row next to the switch.
+                // Cap the helper text at half the screen width so it reads as
+                // a compact block instead of stretching the full row.
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .widthIn(max = 260.dp)
+                        .widthIn(max = LocalConfiguration.current.screenWidthDp.dp / 2)
                 ) {
                     Text("Blind tasting", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Coffees stay anonymous \u2014 cups appear as \u201cCup 1\u2026N\u201d " +
+                        "Coffees stay anonymous. Cups appear as \u201cCup 1\u2026N\u201d " +
                             "until you reveal them.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
