@@ -44,9 +44,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cupnlog.data.CuppingMath
+import app.cupnlog.data.CoffeeEntry
 import app.cupnlog.data.CuppingPlan
 import app.cupnlog.data.CuppingStep
 import app.cupnlog.data.CuppingTimeline
@@ -165,6 +163,10 @@ fun SessionScreen(vm: CuppingViewModel) {
                         plan = session.plan,
                         sessionId = session.savedSessionId ?: session.plannedSessionId,
                         blindRevealed = savedRow?.revealedAtMs != null,
+                        // After a confirmed identification the saved row's
+                        // coffees are the ones reordered into cup positions —
+                        // the live plan keeps the setup order.
+                        revealedCoffees = savedRow?.plan?.coffees,
                     )
                 }
                 !running -> ReadyToStartContent(
@@ -501,14 +503,17 @@ private fun StepLeadIcon(completed: Boolean, isCurrent: Boolean, index: Int) {
 }
 
 /** Done screen: coffee identification, unless this was an empty quick-start session.
- *  Blind, un-revealed sessions show positions only and offer the explicit
- *  "Reveal identities" action (never automatic, not reversible). */
+ *  Blind, un-identified sessions show positions only and offer the "Identify
+ *  the cups" flow (label under each cup → position). Revealed sessions list
+ *  the coffees in cup positions — [revealedCoffees] from the saved row, not
+ *  the live plan. */
 @Composable
 private fun FinishedContent(
     vm: CuppingViewModel,
     plan: CuppingPlan,
     sessionId: String?,
     blindRevealed: Boolean,
+    revealedCoffees: List<CoffeeEntry>? = null,
 ) {
     if (plan.coffees.isEmpty()) {
         Text(
@@ -530,20 +535,21 @@ private fun FinishedContent(
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(4.dp))
-        var confirmReveal by remember { mutableStateOf(false) }
         when {
             plan.blind && !blindRevealed -> {
                 Text(
-                    "Coffee names stay hidden until you reveal them. The session was saved " +
-                        "to your history.",
+                    "Coffee names stay hidden until you identify the cups. The session " +
+                        "was saved to your history.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 BlindCoffeeListCard(cupCount = plan.cupCount)
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { confirmReveal = true }) {
-                    Text("Reveal identities")
+                if (sessionId != null) {
+                    Button(onClick = { vm.openIdentifyCups(sessionId, Screen.LiveSession) }) {
+                        Text("Identify the cups")
+                    }
                 }
             }
             else -> {
@@ -558,20 +564,8 @@ private fun FinishedContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                CoffeeListCard(coffees = plan.coffees)
+                CoffeeListCard(coffees = revealedCoffees ?: plan.coffees)
             }
-        }
-        if (confirmReveal && sessionId != null) {
-            ConfirmDialog(
-                title = "Reveal the coffee names?",
-                text = "Cup names, numbers and colours become visible. This cannot be undone.",
-                confirmLabel = "Reveal",
-                onConfirm = {
-                    vm.revealBlind(sessionId)
-                    confirmReveal = false
-                },
-                onDismiss = { confirmReveal = false },
-            )
         }
     }
     Spacer(modifier = Modifier.height(16.dp))

@@ -138,18 +138,54 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
                 CoffeeListCard(coffees = session.plan.coffees)
             }
             Spacer(modifier = Modifier.height(16.dp))
-            if (session.blind && session.revealedAtMs == null &&
-                session.origin == SessionOrigin.OWN
-            ) {
-                // Explicit reveal (never automatic, not reversible): the detail
-                // view offers it for any not-yet-revealed own blind session.
-                Button(
-                    onClick = { confirmReveal = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                ) {
-                    Text("Reveal identities", fontWeight = FontWeight.Bold)
+            if (session.blind && session.origin == SessionOrigin.OWN) {
+                when {
+                    // Done, not yet identified: the identification flow both
+                    // orders the coffees into cup positions and reveals them.
+                    session.status == SessionStatus.DONE && session.revealedAtMs == null -> {
+                        Button(
+                            onClick = {
+                                vm.openIdentifyCups(
+                                    session.id,
+                                    Screen.SessionDetail(session.id),
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                        ) {
+                            Text("Identify the cups", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    // Done and revealed: re-matching just re-permutes the
+                    // coffees; ratings and the reveal stamp stay untouched.
+                    session.status == SessionStatus.DONE -> {
+                        Button(
+                            onClick = {
+                                vm.openIdentifyCups(
+                                    session.id,
+                                    Screen.SessionDetail(session.id),
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                        ) {
+                            Text("Edit identification", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    // Planned rows have no cupped ratings to align: the
+                    // explicit reveal stays a direct action (not reversible).
+                    session.revealedAtMs == null -> {
+                        Button(
+                            onClick = { confirmReveal = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                        ) {
+                            Text("Reveal identities", fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -195,7 +231,7 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
     if (confirmReveal) {
         ConfirmDialog(
             title = "Reveal coffee names?",
-            text = "Cup names, numbers and colours become visible. This cannot be undone.",
+            text = "Coffee names become visible. This cannot be undone.",
             confirmLabel = "Reveal",
             onConfirm = { vm.revealBlind(session.id); confirmReveal = false },
             onDismiss = { confirmReveal = false },

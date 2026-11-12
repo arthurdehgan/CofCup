@@ -26,6 +26,7 @@ fun CuppingApp() {
         Screen.History -> HistoryScreen(vm)
         // `screen` is a delegated property, so copy it into a local for a stable smart cast.
         is Screen.SessionDetail -> SessionDetailScreen(vm, s.sessionId)
+        is Screen.IdentifyCups -> IdentifyCupsScreen(vm, s.sessionId)
     }
 
     // Session shell: owns keep-screen-on, chime playback and the Done save for

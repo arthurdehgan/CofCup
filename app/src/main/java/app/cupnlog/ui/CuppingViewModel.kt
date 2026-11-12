@@ -14,6 +14,7 @@ import app.cupnlog.data.RatingField
 import app.cupnlog.data.SavedSession
 import app.cupnlog.data.SessionStatus
 import app.cupnlog.data.reveal
+import app.cupnlog.data.matchAndReveal
 import app.cupnlog.data.toCompleted
 import app.cupnlog.data.withScore
 import java.util.UUID
@@ -47,6 +48,13 @@ sealed interface Screen {
     data object Settings : Screen
     data object History : Screen
     data class SessionDetail(val sessionId: String) : Screen
+
+    /**
+     * Blind identification for a saved row: assign each cup position the label
+     * that was under it. `returnTo` keeps `handleBack()` sensible — the flow is
+     * opened from the Finished live screen or from the session detail.
+     */
+    data class IdentifyCups(val sessionId: String, val returnTo: Screen) : Screen
 }
 
 /** A session that has been set up but may not have started timing yet. */
@@ -102,6 +110,15 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
      */
     private val _myRatings = MutableStateFlow<Map<Int, CupRating>>(emptyMap())
     val myRatings: StateFlow<Map<Int, CupRating>> = _myRatings.asStateFlow()
+
+    /**
+     * In-progress blind identification for the saved row behind the current
+     * IdentifyCups screen: cup position (0-based) → index into that row's
+     * coffees. Lives in the VM only; [confirmMatch] persists it, while leaving
+     * the screen or resetting the session discards it.
+     */
+    private val _pendingMatch = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val pendingMatch: StateFlow<Map<Int, Int>> = _pendingMatch.asStateFlow()
 
     /**
      * Id of the planned row the current StartCheck screen is about to run (set
@@ -273,6 +290,72 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     }
 
     // ------------------------------------------------------------------
+    // Blind identification (match cups to labels)
+    // ------------------------------------------------------------------
+
+    /**
+     * Opens the identification screen for a saved row. A row that is already
+     * revealed (re-matching) starts from its current assignment, so fixing one
+     * mistaken cup is a single change; a fresh match starts empty — the cups
+     * were mixed, so no position is known yet.
+     */
+    fun openIdentifyCups(sessionId: String, returnTo: Screen) {
+        _screen.value = Screen.IdentifyCups(sessionId = sessionId, returnTo = returnTo)
+        viewModelScope.launch {
+            val session = repository.sessions.first().firstOrNull { it.id == sessionId }
+                ?: return@launch
+            // Joined copies get their identification from the host, never here.
+            if (session.origin == app.cupnlog.data.SessionOrigin.JOINED) return@launch
+            if (session.revealedAtMs != null) {
+                _pendingMatch.value = session.plan.coffees.indices.associateWith { it }
+            }
+        }
+    }
+
+    /** Assigns a coffee (by index) to a cup position, moving it off any other position. */
+    fun assignCupToCoffee(cup: Int, coffeeIndex: Int) {
+        if (cup < 0 || coffeeIndex < 0) return
+        _pendingMatch.update { current ->
+            current.filterValues { it != coffeeIndex } + (cup to coffeeIndex)
+        }
+    }
+
+    /** Clears one cup position's assignment. */
+    fun clearCupAssignment(cup: Int) {
+        _pendingMatch.update { it - cup }
+    }
+
+    /**
+     * Confirms the identification: applies the permutation and stamps the
+     * reveal (first match), or re-permutes an already-revealed row (re-match,
+     * `revealedAtMs` untouched). No-op unless every cup position carries a
+     * distinct in-range coffee — [matchAndReveal] validates the bijection too.
+     */
+    fun confirmMatch(sessionId: String) {
+        val match = _pendingMatch.value
+        viewModelScope.launch {
+            val session = repository.sessions.first().firstOrNull { it.id == sessionId }
+                ?: return@launch
+            val n = session.plan.cupCount
+            if ((0 until n).any { match[it] == null } ||
+                match.values.any { it !in session.plan.coffees.indices } ||
+                match.values.distinct().size != n
+            ) {
+                return@launch
+            }
+            val cupToCoffee = (0 until n).map { match.getValue(it) }
+            repository.save(session.matchAndReveal(cupToCoffee, System.currentTimeMillis()))
+            _pendingMatch.value = emptyMap()
+            // Back to wherever the identification was opened from (the Finished
+            // live screen or the session detail); a stale screen falls back to
+            // History.
+            _screen.value =
+                (screen.value as? Screen.IdentifyCups)?.takeIf { it.sessionId == sessionId }?.returnTo
+                    ?: Screen.History
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Navigation
     // ------------------------------------------------------------------
 
@@ -369,6 +452,13 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             }
             is Screen.SessionDetail -> {
                 _screen.value = Screen.History
+                true
+            }
+            is Screen.IdentifyCups -> {
+                // Backing out discards the pending identification; the row
+                // stays exactly as it was (blind until a confirmed match).
+                _pendingMatch.value = emptyMap()
+                _screen.value = current.returnTo
                 true
             }
         }
@@ -690,6 +780,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         liveBeforeSelection = null
         announcedStepStartSec = 0
         _myRatings.value = emptyMap()
+        _pendingMatch.value = emptyMap()
     }
 
     private fun refreshElapsed() {
