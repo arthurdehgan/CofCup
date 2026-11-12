@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.cupnlog.data.CuppingMath
 import app.cupnlog.data.CoffeeEntry
+import app.cupnlog.data.CupRating
 import app.cupnlog.data.CuppingPlan
 import app.cupnlog.data.CuppingStep
 import app.cupnlog.data.CuppingTimeline
@@ -72,6 +73,8 @@ fun SessionScreen(vm: CuppingViewModel) {
     val elapsedMs by vm.elapsedMs.collectAsState()
     val showLeaveDialog by vm.showLeaveDialog.collectAsState()
     val history by vm.history.collectAsState()
+    val myId by vm.myId.collectAsState()
+    val myRatings by vm.myRatings.collectAsState()
     val plannedSetups = history.filter { it.status == SessionStatus.PLANNED }
     val session = live
 
@@ -158,6 +161,13 @@ fun SessionScreen(vm: CuppingViewModel) {
                     // The Finished screen reads the reveal state from the saved
                     // history row (see onCuppingComplete's savedSessionId).
                     val savedRow = history.firstOrNull { it.id == session.savedSessionId }
+                    // This device's ratings keyed by cup position, shown inline
+                    // on the identification card; the VM-held ratings cover the
+                    // brief window before the Done save has landed.
+                    val ratingsByCup = savedRow?.ratings
+                        ?.filter { it.raterId == myId }
+                        ?.associateBy { it.cup }
+                        ?: myRatings
                     FinishedContent(
                         vm = vm,
                         plan = session.plan,
@@ -167,6 +177,7 @@ fun SessionScreen(vm: CuppingViewModel) {
                         // coffees are the ones reordered into cup positions —
                         // the live plan keeps the setup order.
                         revealedCoffees = savedRow?.plan?.coffees,
+                        ratingsByCup = ratingsByCup,
                     )
                 }
                 !running -> ReadyToStartContent(
@@ -181,8 +192,6 @@ fun SessionScreen(vm: CuppingViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
-
-    val myRatings by vm.myRatings.collectAsState()
 
     if (showLeaveDialog) {
         // Ratings captured so far are the only thing lost with an unfinished run.
@@ -506,7 +515,7 @@ private fun StepLeadIcon(completed: Boolean, isCurrent: Boolean, index: Int) {
  *  Blind, un-identified sessions show positions only and offer the "Identify
  *  the cups" flow (label under each cup → position). Revealed sessions list
  *  the coffees in cup positions — [revealedCoffees] from the saved row, not
- *  the live plan. */
+ *  the live plan — with this device's ratings inline ([ratingsByCup]). */
 @Composable
 private fun FinishedContent(
     vm: CuppingViewModel,
@@ -514,6 +523,7 @@ private fun FinishedContent(
     sessionId: String?,
     blindRevealed: Boolean,
     revealedCoffees: List<CoffeeEntry>? = null,
+    ratingsByCup: Map<Int, CupRating> = emptyMap(),
 ) {
     if (plan.coffees.isEmpty()) {
         Text(
@@ -564,7 +574,10 @@ private fun FinishedContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                CoffeeListCard(coffees = revealedCoffees ?: plan.coffees)
+                CoffeeListCard(
+                    coffees = revealedCoffees ?: plan.coffees,
+                    ratingsByCup = ratingsByCup,
+                )
             }
         }
     }

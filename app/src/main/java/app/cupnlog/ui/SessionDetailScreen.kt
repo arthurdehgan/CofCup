@@ -1,12 +1,8 @@
 package app.cupnlog.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -37,20 +32,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import app.cupnlog.data.CupRating
-import app.cupnlog.data.CuppingPlan
-import app.cupnlog.data.RatingField
-import app.cupnlog.data.SavedSession
 import app.cupnlog.data.SessionOrigin
 import app.cupnlog.data.SessionStatus
-import app.cupnlog.data.isRated
-import app.cupnlog.data.scoreFor
 import app.cupnlog.ui.components.BlindCoffeeListCard
 import app.cupnlog.ui.components.CoffeeListCard
 import app.cupnlog.ui.components.ConfirmDialog
@@ -77,6 +64,12 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
     // is one; unrevealed blind rows keep their neutral labelling.
     val nameHeader = session.plan.sessionName.isNotBlank() &&
         !(session.blind && session.revealedAtMs == null)
+
+    // This device's ratings, keyed by cup position — shown inline on the
+    // identification card's lines (overall on the right, detail on tap).
+    val myRatingsByCup = session.ratings
+        .filter { it.raterId == myId }
+        .associateBy { it.cup }
 
     Scaffold(
         topBar = {
@@ -111,7 +104,7 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 maxLines = 3,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(vertical = 8.dp),
             )
             if (nameHeader) {
@@ -135,7 +128,10 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
                 // Blind, not yet identified: positions only — never name/colour/label.
                 BlindCoffeeListCard(cupCount = session.plan.cupCount)
             } else {
-                CoffeeListCard(coffees = session.plan.coffees)
+                CoffeeListCard(
+                    coffees = session.plan.coffees,
+                    ratingsByCup = myRatingsByCup,
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
             if (session.blind && session.origin == SessionOrigin.OWN) {
@@ -189,10 +185,6 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
-            if (!planned && session.plan.cupCount > 0) {
-                YourRatingsCard(session = session, myId = myId)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
             if (planned) {
                 Button(
                     onClick = { vm.startPlannedRun(session.id, backTo = Screen.History) },
@@ -236,126 +228,5 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
             onConfirm = { vm.revealBlind(session.id); confirmReveal = false },
             onDismiss = { confirmReveal = false },
         )
-    }
-}
-
-/**
- * Phase 2's minimal own-ratings view: this device's ratings for the session,
- * one row per cup (Overall + attribute line + notes), with a quiet
- * "No rating" slot so the row shape stays stable (phase 4 grows this into the
- * multi-rater comparison layout). Blind, un-revealed sessions label rows
- * "Cup N" — no name, colour or number.
- */
-@Composable
-private fun YourRatingsCard(session: SavedSession, myId: String) {
-    val blind = session.blind && session.revealedAtMs == null
-    val plan = session.plan
-    val mine = session.ratings
-        .filter { it.raterId == myId }
-        .associateBy { it.cup }
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                "Your ratings",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            repeat(plan.cupCount) { cup ->
-                YourRatingRow(cup = cup, plan = plan, blind = blind, rating = mine[cup])
-                if (cup != plan.cupCount - 1) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun YourRatingRow(cup: Int, plan: CuppingPlan, blind: Boolean, rating: CupRating?) {
-    val coffee = plan.coffees.getOrNull(cup)
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                if (blind) "Cup ${cup + 1}" else coffee?.displayName ?: "Cup ${cup + 1}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            if (rating?.isRated == true) {
-                Text(
-                    "Overall ${rating.overall ?: "\u2014"}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            } else {
-                Text(
-                    "No rating",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        if (rating?.isRated == true) {
-            Spacer(modifier = Modifier.height(8.dp))
-            // The six attribute scores as equal squares dividing the space
-            // below the coffee name; Overall stays beside the name.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                RatingField.entries
-                    .filter { it != RatingField.OVERALL }
-                    .forEach { field ->
-                        ScoreSquare(
-                            field = field,
-                            score = rating.scoreFor(field),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-            }
-        }
-        if (rating?.notes?.isNotBlank() == true) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                rating.notes,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-    }
-}
-
-/** One attribute square: the score (or a quiet dash when unrated) with its
- *  category label underneath, sized so six of them divide the row width. */
-@Composable
-private fun ScoreSquare(field: RatingField, score: Int?, modifier: Modifier = Modifier) {
-    Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.aspectRatio(1f),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                score?.toString() ?: "\u2014",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                field.label,
-                fontSize = 9.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
     }
 }
