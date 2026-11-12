@@ -375,7 +375,7 @@ private fun RunningContent(plan: CuppingPlan, elapsedSec: Long, current: Cupping
                         modifier = Modifier.size(92.dp),
                     )
                     Text(
-                        CuppingMath.formatClock(elapsedSec),
+                        CuppingMath.formatClock(CuppingTimeline.secondsUntil(elapsedSec, next)),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
