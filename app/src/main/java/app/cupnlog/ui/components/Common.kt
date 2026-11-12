@@ -199,7 +199,7 @@ fun CoffeeListCard(
             coffees.forEachIndexed { index, coffee ->
                 CoffeeLine(position = index, coffee = coffee, rating = ratingsByCup[index])
                 if (index != coffees.size - 1) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }

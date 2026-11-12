@@ -557,8 +557,13 @@ private fun FinishedContent(
                 BlindCoffeeListCard(cupCount = plan.cupCount)
                 Spacer(modifier = Modifier.height(16.dp))
                 if (sessionId != null) {
-                    Button(onClick = { vm.openIdentifyCups(sessionId, Screen.LiveSession) }) {
-                        Text("Identify the cups")
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Button(onClick = { vm.openIdentifyCups(sessionId, Screen.LiveSession) }) {
+                            Text("Identify the cups")
+                        }
                     }
                 }
             }
