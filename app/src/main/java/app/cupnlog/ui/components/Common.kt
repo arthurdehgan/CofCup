@@ -352,6 +352,9 @@ fun BlindCoffeeListCard(cupCount: Int, title: String = "Coffee identification") 
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
+                if (index != cupCount - 1) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }
