@@ -63,8 +63,8 @@ fun LabelScreen(vm: CuppingViewModel) {
                 .verticalScroll(rememberScrollState()),
         ) {
             Text(
-                "Give each cup a colour, a number (the one written on or under the cup) " +
-                    "and a name. After the cupping you will identify the coffees by " +
+                "Give each cup a colour, a number and a name. " +
+                    "After the cupping you will identify the coffees by " +
                     "colour and number.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
