@@ -789,8 +789,12 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             if (_elapsedMs.value != 0L) _elapsedMs.value = 0
             return
         }
+        // The clock stops once the final "Done" step is reached: the session
+        // ran for the timeline's length, and the screen may stay open longer.
+        val doneStartMs = CuppingTimeline.steps.last().startSec * 1000
         val elapsed = (SystemClock.elapsedRealtime() - startedAt + session.extraOffsetMs)
             .coerceAtLeast(0)
+            .coerceAtMost(doneStartMs)
         if (elapsed != _elapsedMs.value) _elapsedMs.value = elapsed
         announceChimeFor(elapsed)
         // Detect Done here in the ticker (an idempotent save-once): the session

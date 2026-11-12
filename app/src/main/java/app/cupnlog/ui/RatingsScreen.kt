@@ -94,6 +94,27 @@ fun RatingsScreen(vm: CuppingViewModel) {
                 },
             )
         },
+        bottomBar = {
+            // "Save ratings" behaves exactly like the back arrow: it leaves
+            // the screen, and after Done the edits are persisted on the way
+            // out. Pinned at the bottom so it stays reachable above the cup
+            // rows on tall lists.
+            Surface(tonalElevation = 3.dp) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                ) {
+                    Button(
+                        onClick = { vm.handleBack() },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Save ratings")
+                    }
+                }
+            }
+        },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -102,8 +123,12 @@ fun RatingsScreen(vm: CuppingViewModel) {
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
-            CompactTimerCard(elapsedSec = elapsedSec, current = current)
-            Spacer(modifier = Modifier.height(8.dp))
+            // Cupping complete: no "Current step" and no clock any more —
+            // the timer stopped when Done was reached.
+            if (!current.isLast) {
+                CompactTimerCard(elapsedSec = elapsedSec, current = current)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             Text(
                 "Tap a cup to score it.",
                 style = MaterialTheme.typography.bodySmall,

@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -250,6 +252,21 @@ private fun CoffeeLine(position: Int, coffee: CoffeeEntry, rating: CupRating?) {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
+            // Expandability cue at the line's end: right-pointing while
+            // compact, down-pointing while expanded (scored lines only).
+            if (rated) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = if (expanded) {
+                        Icons.Default.KeyboardArrowDown
+                    } else {
+                        Icons.Default.KeyboardArrowRight
+                    },
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
         if (expanded && rated && rating != null) {
             Spacer(modifier = Modifier.height(8.dp))
