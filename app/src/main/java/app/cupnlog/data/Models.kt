@@ -54,6 +54,8 @@ data class CuppingDraft(
     val coffees: List<CoffeeEntry> = CupColors.defaultCoffees(),
     /** Optional display name of the cupping session; used for saved setups. */
     val sessionName: String = "",
+    /** Blind tasting: identities are hidden until an explicit reveal (phase 2). */
+    val blind: Boolean = false,
 ) {
     /** Immutable snapshot used while a session is running. */
     fun toPlan(): CuppingPlan = CuppingPlan(
@@ -61,6 +63,7 @@ data class CuppingDraft(
         cupCount = cupCount,
         coffees = coffees.take(cupCount),
         sessionName = sessionName,
+        blind = blind,
     )
 
     companion object {
@@ -80,6 +83,8 @@ data class CuppingPlan(
     val coffees: List<CoffeeEntry>,
     /** Optional display name of the session (see [CuppingDraft.sessionName]). */
     val sessionName: String = "",
+    /** Blind tasting: live screens render positions only (see [Blind.kt]). */
+    val blind: Boolean = false,
 )
 
 /** Lifecycle state of a stored session. Absent in JSON means done (legacy rows). */
@@ -109,6 +114,47 @@ data class CupRating(
     val notes: String = "",
 )
 
+/** The six informational attributes plus the strictly manual Overall (1–10). */
+enum class RatingField(val label: String) {
+    AROMA("Aroma"),
+    FLAVOR("Flavor"),
+    ACIDITY("Acidity"),
+    SWEETNESS("Sweetness"),
+    MOUTHFEEL("Mouthfeel"),
+    AFTERTASTE("Aftertaste"),
+    OVERALL("Overall"),
+}
+
+/** Sets one score field; a null value means "not rated". */
+fun CupRating.withScore(field: RatingField, value: Int?): CupRating = when (field) {
+    RatingField.AROMA -> copy(aroma = value)
+    RatingField.FLAVOR -> copy(flavor = value)
+    RatingField.ACIDITY -> copy(acidity = value)
+    RatingField.SWEETNESS -> copy(sweetness = value)
+    RatingField.MOUTHFEEL -> copy(mouthfeel = value)
+    RatingField.AFTERTASTE -> copy(aftertaste = value)
+    RatingField.OVERALL -> copy(overall = value)
+}
+
+/** Reads one score field, so screens need no per-field branching. */
+fun CupRating.scoreFor(field: RatingField): Int? = when (field) {
+    RatingField.AROMA -> aroma
+    RatingField.FLAVOR -> flavor
+    RatingField.ACIDITY -> acidity
+    RatingField.SWEETNESS -> sweetness
+    RatingField.MOUTHFEEL -> mouthfeel
+    RatingField.AFTERTASTE -> aftertaste
+    RatingField.OVERALL -> overall
+}
+
+/**
+ * The "rated" definition: a cup counts as rated if any score (attribute,
+ * overall, or notes) exists. Nothing gates the Done step on ratings.
+ */
+val CupRating.isRated: Boolean
+    get() = aroma != null || flavor != null || acidity != null || sweetness != null ||
+        mouthfeel != null || aftertaste != null || overall != null || notes.isNotBlank()
+
 /** A session stored in the history: planned set-ups, finished runs, joined copies. */
 data class SavedSession(
     val id: String,
@@ -134,8 +180,19 @@ data class SavedSession(
  * session reaches Done, the result overwrites the SAME row — same id and
  * createdAt, status flips to DONE — carrying the plan the run actually used and
  * the ratings captured during it. No second artifact is ever created.
+ *
+ * The blind flag follows the plan the run used: editing a planned row and
+ * toggling blind off converts the row into a non-blind session.
  */
 fun SavedSession.toCompleted(
     plan: CuppingPlan,
     ratings: List<CupRating> = emptyList(),
-): SavedSession = copy(plan = plan, status = SessionStatus.DONE, ratings = ratings)
+): SavedSession = copy(plan = plan, status = SessionStatus.DONE, blind = plan.blind, ratings = ratings)
+
+/**
+ * Explicit blind reveal: identities become visible only by a deliberate action,
+ * never automatically, and the reveal is not reversible. A second call (or a
+ * call on a non-blind session) is a no-op, so revealedAtMs is set exactly once.
+ */
+fun SavedSession.reveal(nowMs: Long): SavedSession =
+    if (blind && revealedAtMs == null) copy(revealedAtMs = nowMs) else this

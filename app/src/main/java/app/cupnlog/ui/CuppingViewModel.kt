@@ -5,12 +5,16 @@ import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.cupnlog.CupnlogApplication
+import app.cupnlog.data.CupRating
 import app.cupnlog.data.CuppingDraft
 import app.cupnlog.data.CuppingPlan
 import app.cupnlog.data.CuppingTimeline
+import app.cupnlog.data.RatingField
 import app.cupnlog.data.SavedSession
 import app.cupnlog.data.SessionStatus
+import app.cupnlog.data.reveal
 import app.cupnlog.data.toCompleted
+import app.cupnlog.data.withScore
 import java.util.UUID
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -38,6 +42,7 @@ sealed interface Screen {
     data class StartCheck(val returnTo: Screen? = null) : Screen
 
     data object LiveSession : Screen
+    data object Ratings : Screen
     data object Settings : Screen
     data object History : Screen
     data class SessionDetail(val sessionId: String) : Screen
@@ -58,6 +63,12 @@ data class LiveSession(
      * started without a saved setup behind them.
      */
     val plannedSessionId: String? = null,
+    /**
+     * Id of the history row the Done save wrote (the converted planned row or
+     * the fresh one). Set only once the save has landed; lets the Finished
+     * screen and the Ratings-exit persist point at the exact saved row.
+     */
+    val savedSessionId: String? = null,
 )
 
 private fun Application.appRepository() =
@@ -82,6 +93,14 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
 
     private val _showLeaveDialog = MutableStateFlow(false)
     val showLeaveDialog: StateFlow<Boolean> = _showLeaveDialog.asStateFlow()
+
+    /**
+     * Ratings captured during the live run, keyed by cup position. They live
+     * in the VM only (no keystroke writes): Done persists them, and leaving
+     * the Ratings screen after Done re-persists them into the saved row.
+     */
+    private val _myRatings = MutableStateFlow<Map<Int, CupRating>>(emptyMap())
+    val myRatings: StateFlow<Map<Int, CupRating>> = _myRatings.asStateFlow()
 
     /**
      * Id of the planned row the current StartCheck screen is about to run (set
@@ -138,6 +157,13 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = false,
+    )
+
+    /** This device's stable participant id (empty until first generated). */
+    val myId: StateFlow<String> = repository.myId.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = "",
     )
 
     fun setSoundOn(enabled: Boolean) {
@@ -209,6 +235,42 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _draft.update { it.copy(sessionName = name.take(40)) }
     }
 
+    /** Blind tasting toggle on the setup screen; the flag rides the draft into
+     *  the plan (and from there into the saved session at save/conversion). */
+    fun setBlind(enabled: Boolean) {
+        _draft.update { it.copy(blind = enabled) }
+    }
+
+    // ------------------------------------------------------------------
+    // In-session ratings (phase 2)
+    // ------------------------------------------------------------------
+
+    /** Number of cups in the live plan, or 0 when no session is live. */
+    private fun liveCupCount(): Int = _live.value?.plan?.cupCount ?: 0
+
+    /** The in-progress rating for a cup, or an unrated placeholder. */
+    private fun ratingFor(cup: Int): CupRating =
+        _myRatings.value[cup] ?: CupRating(cup = cup, raterId = "")
+
+    /** Sets one score field (1–10) for one cup; edits live in the VM only. */
+    fun setCupRatingScore(cup: Int, field: RatingField, value: Int) {
+        if (cup !in 0 until liveCupCount()) return
+        _myRatings.update {
+            it + (cup to ratingFor(cup).withScore(field, value.coerceIn(1, 10)))
+        }
+    }
+
+    /** Sets a cup's free-text notes, capped at 500 characters. */
+    fun setCupRatingNotes(cup: Int, notes: String) {
+        if (cup !in 0 until liveCupCount()) return
+        _myRatings.update { it + (cup to ratingFor(cup).copy(notes = notes.take(500))) }
+    }
+
+    /** Drops a cup's rating entirely (back to "not rated"). */
+    fun clearCupRating(cup: Int) {
+        _myRatings.update { it - cup }
+    }
+
     // ------------------------------------------------------------------
     // Navigation
     // ------------------------------------------------------------------
@@ -245,6 +307,11 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     /** Gear icon on the live-session screens. */
     fun openSettings() {
         _screen.value = Screen.Settings
+    }
+
+    /** "Rate" chip on the live-session screens. */
+    fun openRatings() {
+        _screen.value = Screen.Ratings
     }
 
     /**
@@ -288,6 +355,13 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 _screen.value = Screen.LiveSession
                 true
             }
+            Screen.Ratings -> {
+                // Leaving Ratings after Done re-persists the edits (the Done
+                // save has already landed); otherwise nothing is written here.
+                persistMyRatingsIfFinished()
+                _screen.value = Screen.LiveSession
+                true
+            }
             Screen.History -> {
                 _screen.value = Screen.Home
                 true
@@ -323,6 +397,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             )
             _elapsedMs.value = 0
             announcedStepStartSec = 0
+            _myRatings.value = emptyMap()
         }
         _screen.value = Screen.LiveSession
     }
@@ -350,6 +425,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             )
             _elapsedMs.value = 0
             announcedStepStartSec = 0
+            _myRatings.value = emptyMap()
         }
         _screen.value = Screen.LiveSession
     }
@@ -377,6 +453,9 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _live.update { it?.copy(finished = true) }
         val plannedId = session.plannedSessionId
         viewModelScope.launch {
+            val myId = repository.getOrCreateMyId()
+            val myName = repository.myName.first()
+            val ratings = sessionRatings(myId, myName)
             // Done with a saved setup behind the run: convert that planned row
             // in place (same id, same createdAt, status → done). If the row was
             // deleted meanwhile, fall back to a fresh history row.
@@ -384,13 +463,65 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 repository.sessions.first()
                     .firstOrNull { it.id == id && it.status == SessionStatus.PLANNED }
             }
-            val saved = planned?.toCompleted(session.plan)
+            val saved = planned?.toCompleted(session.plan, ratings)
                 ?: SavedSession(
                     id = UUID.randomUUID().toString(),
                     createdAtMs = System.currentTimeMillis(),
                     plan = session.plan,
+                    blind = session.plan.blind,
+                    ratings = ratings,
                 )
             repository.save(saved)
+            // Remember the saved row so the Finished screen and the Ratings-exit
+            // persist can target it.
+            _live.update { it?.copy(savedSessionId = saved.id) }
+        }
+    }
+
+    /** Maps the VM-held ratings into history entries for this device's rater,
+     *  ordered by cup position and bounded to the live plan's cup count. */
+    private fun sessionRatings(raterId: String, rater: String): List<CupRating> =
+        _myRatings.value
+            .filterKeys { it in 0 until liveCupCount() }
+            .entries.sortedBy { it.key }
+            .map { (cup, rating) -> rating.copy(cup = cup, raterId = raterId, rater = rater) }
+
+    /**
+     * Ratings-screen exit after Done already saved: writes the VM-held edits
+     * into the saved row, replacing this device's previous entries per
+     * raterId (idempotent — the same replace-per-rater rule the QR merge uses).
+     * No-op while the session is still running: there, Done does the writing.
+     */
+    private fun persistMyRatingsIfFinished() {
+        val session = _live.value ?: return
+        if (!session.finished) return
+        val savedId = session.savedSessionId ?: return
+        viewModelScope.launch {
+            val myId = repository.getOrCreateMyId()
+            val myName = repository.myName.first()
+            val mine = sessionRatings(myId, myName)
+            val saved = repository.sessions.first().firstOrNull { it.id == savedId }
+                ?: return@launch
+            val merged = saved.ratings
+                .filterNot { it.raterId == myId }
+                .plus(mine)
+                .sortedBy { it.cup }
+            repository.save(saved.copy(ratings = merged))
+        }
+    }
+
+    /**
+     * Explicit blind reveal for a saved session (never automatic; not
+     * reversible — see [reveal]). Only meaningful for own sessions: joined
+     * copies get their reveal from the host's broadcast (phase 4).
+     */
+    fun revealBlind(sessionId: String) {
+        viewModelScope.launch {
+            val session = repository.sessions.first()
+                .firstOrNull { it.id == sessionId }
+                ?: return@launch
+            if (session.origin == app.cupnlog.data.SessionOrigin.JOINED) return@launch
+            repository.save(session.reveal(System.currentTimeMillis()))
         }
     }
     fun goHomeAfterSession() {
@@ -433,7 +564,9 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                     plan = plan,
                     status = SessionStatus.PLANNED,
                 )
-            repository.save(session.copy(plan = plan, status = SessionStatus.PLANNED))
+            // The plan the draft holds is authoritative for blind too: editing a
+            // planned row and toggling blind off updates the SAME row's flag.
+            repository.save(session.copy(plan = plan, status = SessionStatus.PLANNED, blind = plan.blind))
             editingPlannedSessionId = null
             _screen.value = Screen.Home
         }
@@ -453,6 +586,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 cupCount = session.plan.cupCount,
                 coffees = session.plan.coffees,
                 sessionName = session.plan.sessionName,
+                blind = session.blind,
             )
             editingPlannedSessionId = null
             _plannedRunSource.value = sessionId
@@ -486,13 +620,17 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 cupCount = planned.plan.cupCount,
                 coffees = planned.plan.coffees,
                 sessionName = planned.plan.sessionName,
+                blind = planned.blind,
             ).toPlan()
             _draft.value = CuppingDraft(
                 cupSizeMl = plan.cupSizeMl,
                 cupCount = plan.cupCount,
                 coffees = plan.coffees,
                 sessionName = plan.sessionName,
+                blind = plan.blind,
             )
+            // A swapped plan invalidates any ratings keyed by cup position.
+            _myRatings.value = emptyMap()
             _live.update { live ->
                 if (live == null || live.startedAtMs != null || live.finished) live
                 else live.copy(plan = plan, plannedSessionId = sessionId)
@@ -515,6 +653,8 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _live.value = restoredSession
         _draft.value = restoredDraft
         liveBeforeSelection = null
+        // The pick may have swapped the plan; position-keyed ratings are void.
+        _myRatings.value = emptyMap()
     }
 
     /** Chip overflow "Edit": loads the planned plan into the draft and opens
@@ -529,6 +669,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 cupCount = session.plan.cupCount,
                 coffees = session.plan.coffees,
                 sessionName = session.plan.sessionName,
+                blind = session.blind,
             )
             editingPlannedSessionId = sessionId
             _plannedRunSource.value = null
@@ -547,6 +688,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _plannedRunSource.value = null
         liveBeforeSelection = null
         announcedStepStartSec = 0
+        _myRatings.value = emptyMap()
     }
 
     private fun refreshElapsed() {

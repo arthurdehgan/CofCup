@@ -7,9 +7,12 @@ import app.cupnlog.data.HistoryCodec
 import app.cupnlog.data.SavedSession
 import app.cupnlog.data.SessionOrigin
 import app.cupnlog.data.SessionStatus
+import app.cupnlog.data.reveal
 import app.cupnlog.data.toCompleted
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Phase 1: planned→done conversion must be a same-row overwrite (decision 3). */
@@ -75,5 +78,48 @@ class PlanConversionTest {
         assertEquals(SessionStatus.DONE, redecoded.status)
         assertEquals(planned.id, redecoded.id)
         assertEquals(planned.createdAtMs, redecoded.createdAtMs)
+    }
+
+    // ------------------------------------------------------------------
+    // Phase 2: blind flag + explicit reveal
+    // ------------------------------------------------------------------
+
+    /** The run's plan is authoritative for blind — in both directions. */
+    @Test
+    fun conversion_stamps_blind_from_the_run_plan() {
+        val planned = plannedSession()
+        val blindRun = planned.toCompleted(plan = planned.plan.copy(blind = true))
+        assertTrue(blindRun.blind)
+
+        val blindPlanned = plannedSession().copy(blind = true)
+        val visibleRun = blindPlanned.toCompleted(plan = blindPlanned.plan.copy(blind = false))
+        assertFalse(visibleRun.blind)
+    }
+
+    @Test
+    fun reveal_sets_revealedAt_exactly_once() {
+        val blind = plannedSession().copy(blind = true)
+        val revealed = blind.reveal(nowMs = 123L)
+        assertEquals(123L, revealed.revealedAtMs)
+        assertEquals(blind.id, revealed.id)
+        // Not reversible and idempotent: a second call changes nothing.
+        assertEquals(revealed, revealed.reveal(nowMs = 456L))
+    }
+
+    @Test
+    fun reveal_is_a_noop_on_non_blind_or_already_revealed_sessions() {
+        val visible = plannedSession()
+        assertEquals(visible, visible.reveal(nowMs = 123L))
+
+        val alreadyRevealed = plannedSession().copy(blind = true, revealedAtMs = 5L)
+        assertEquals(alreadyRevealed, alreadyRevealed.reveal(nowMs = 7L))
+    }
+
+    @Test
+    fun blind_flag_round_trips_through_the_history_json() {
+        val blind = plannedSession().copy(blind = true)
+        val decoded = HistoryCodec.decode(HistoryCodec.encode(listOf(blind))).single()
+        assertTrue(decoded.blind)
+        assertNull(decoded.revealedAtMs)
     }
 }

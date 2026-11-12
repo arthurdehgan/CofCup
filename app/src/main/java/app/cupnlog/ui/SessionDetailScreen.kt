@@ -1,6 +1,7 @@
 package app.cupnlog.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,10 +32,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.cupnlog.data.CupRating
+import app.cupnlog.data.CuppingPlan
+import app.cupnlog.data.RatingField
+import app.cupnlog.data.SavedSession
+import app.cupnlog.data.SessionOrigin
 import app.cupnlog.data.SessionStatus
+import app.cupnlog.data.isRated
+import app.cupnlog.data.scoreFor
 import app.cupnlog.ui.components.BlindCoffeeListCard
 import app.cupnlog.ui.components.CoffeeListCard
 import app.cupnlog.ui.components.ConfirmDialog
@@ -45,8 +54,10 @@ import app.cupnlog.ui.components.formatDateTime
 @Composable
 fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
     val history by vm.history.collectAsState()
+    val myId by vm.myId.collectAsState()
     val session = history.firstOrNull { it.id == sessionId }
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmReveal by remember { mutableStateOf(false) }
 
     // The viewed session can disappear when deleted elsewhere.
     if (session == null) {
@@ -121,6 +132,25 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
                 CoffeeListCard(coffees = session.plan.coffees)
             }
             Spacer(modifier = Modifier.height(16.dp))
+            if (session.blind && session.revealedAtMs == null &&
+                session.origin == SessionOrigin.OWN
+            ) {
+                // Explicit reveal (never automatic, not reversible): the detail
+                // view offers it for any not-yet-revealed own blind session.
+                Button(
+                    onClick = { confirmReveal = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                ) {
+                    Text("Reveal identities", fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            if (!planned && session.plan.cupCount > 0) {
+                YourRatingsCard(session = session, myId = myId)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
             if (planned) {
                 Button(
                     onClick = { vm.startPlannedRun(session.id, backTo = Screen.History) },
@@ -154,5 +184,97 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
             onConfirm = { vm.deleteSession(session.id) },
             onDismiss = { confirmDelete = false },
         )
+    }
+
+    if (confirmReveal) {
+        ConfirmDialog(
+            title = "Reveal identities?",
+            text = "Cup names, numbers and colours become visible. This cannot be undone.",
+            confirmLabel = "Reveal",
+            onConfirm = { vm.revealBlind(session.id); confirmReveal = false },
+            onDismiss = { confirmReveal = false },
+        )
+    }
+}
+
+/**
+ * Phase 2's minimal own-ratings view: this device's ratings for the session,
+ * one row per cup (Overall + attribute line + notes), with a quiet
+ * "No rating" slot so the row shape stays stable (phase 4 grows this into the
+ * multi-rater comparison layout). Blind, un-revealed sessions label rows
+ * "Cup N" — no name, colour or number.
+ */
+@Composable
+private fun YourRatingsCard(session: SavedSession, myId: String) {
+    val blind = session.blind && session.revealedAtMs == null
+    val plan = session.plan
+    val mine = session.ratings
+        .filter { it.raterId == myId }
+        .associateBy { it.cup }
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                "Your ratings",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            repeat(plan.cupCount) { cup ->
+                YourRatingRow(cup = cup, plan = plan, blind = blind, rating = mine[cup])
+                if (cup != plan.cupCount - 1) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun YourRatingRow(cup: Int, plan: CuppingPlan, blind: Boolean, rating: CupRating?) {
+    val coffee = plan.coffees.getOrNull(cup)
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                if (blind) "Cup ${cup + 1}" else coffee?.displayName ?: "Cup ${cup + 1}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            if (rating?.isRated == true) {
+                Text(
+                    "Overall ${rating.overall ?: "\u2014"}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            } else {
+                Text(
+                    "No rating",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (rating?.isRated == true) {
+            val attributes = RatingField.entries
+                .filter { it != RatingField.OVERALL }
+                .mapNotNull { field -> rating.scoreFor(field)?.let { "${field.label} $it" } }
+            if (attributes.isNotEmpty()) {
+                Text(
+                    attributes.joinToString(" \u00b7 "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (rating.notes.isNotBlank()) {
+                Text(
+                    rating.notes,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
     }
 }

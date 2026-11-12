@@ -22,11 +22,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -127,6 +129,26 @@ fun SetupScreen(vm: CuppingViewModel) {
                 decrementEnabled = draft.cupCount > CuppingDraft.MIN_CUPS,
                 incrementEnabled = draft.cupCount < CuppingDraft.MAX_CUPS,
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Blind tasting", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Coffees stay anonymous \u2014 cups appear as \u201cCup 1\u2026N\u201d " +
+                            "until you reveal them.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = draft.blind,
+                    onCheckedChange = { vm.setBlind(it) },
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 

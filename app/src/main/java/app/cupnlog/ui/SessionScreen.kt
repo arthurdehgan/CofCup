@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,6 +44,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +60,9 @@ import app.cupnlog.data.CuppingStep
 import app.cupnlog.data.CuppingTimeline
 import app.cupnlog.data.SavedSession
 import app.cupnlog.data.SessionStatus
+import app.cupnlog.data.blindDoneInstruction
+import app.cupnlog.data.isRated
+import app.cupnlog.ui.components.BlindCoffeeListCard
 import app.cupnlog.ui.components.CoffeeListCard
 import app.cupnlog.ui.components.ConfirmDialog
 import app.cupnlog.ui.components.displaySessionName
@@ -100,6 +107,13 @@ fun SessionScreen(vm: CuppingViewModel) {
                     }
                 },
                 actions = {
+                    if (session.plan.cupCount > 0) {
+                        AssistChip(
+                            onClick = { vm.openRatings() },
+                            label = { Text("Rate") },
+                            modifier = Modifier.padding(end = 4.dp),
+                        )
+                    }
                     IconButton(onClick = { vm.openSettings() }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
@@ -140,7 +154,17 @@ fun SessionScreen(vm: CuppingViewModel) {
                 .verticalScroll(rememberScrollState()),
         ) {
             when {
-                finished -> FinishedContent(vm = vm, plan = session.plan)
+                finished -> {
+                    // The Finished screen reads the reveal state from the saved
+                    // history row (see onCuppingComplete's savedSessionId).
+                    val savedRow = history.firstOrNull { it.id == session.savedSessionId }
+                    FinishedContent(
+                        vm = vm,
+                        plan = session.plan,
+                        sessionId = session.savedSessionId ?: session.plannedSessionId,
+                        blindRevealed = savedRow?.revealedAtMs != null,
+                    )
+                }
                 !running -> ReadyToStartContent(
                     vm = vm,
                     plan = session.plan,
@@ -154,10 +178,19 @@ fun SessionScreen(vm: CuppingViewModel) {
         }
     }
 
+    val myRatings by vm.myRatings.collectAsState()
+
     if (showLeaveDialog) {
+        // Ratings captured so far are the only thing lost with an unfinished run.
+        val hasRatings = myRatings.values.any { it.isRated }
         ConfirmDialog(
             title = "End session?",
-            text = "Leave before the cupping is finished? Nothing will be saved.",
+            text = if (hasRatings) {
+                "Leave before the cupping is finished? Your ratings for this unfinished " +
+                    "session will be lost."
+            } else {
+                "Leave before the cupping is finished? Nothing will be saved."
+            },
             confirmLabel = "End & discard",
             onConfirm = { vm.discardLiveSession() },
             onDismiss = { vm.dismissLeaveDialog() },
@@ -381,7 +414,15 @@ private fun RunningContent(plan: CuppingPlan, elapsedSec: Long, current: Cupping
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(current.instruction, style = MaterialTheme.typography.bodyMedium)
+            // Blind sessions must not leak identities through the Done step's
+            // instruction (the colour/number wording) — swap in the neutral
+            // variant without moving any step window out of CuppingTimeline.
+            val instruction = if (plan.blind && current.isLast) {
+                blindDoneInstruction(plan.cupCount)
+            } else {
+                current.instruction
+            }
+            Text(instruction, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -483,9 +524,16 @@ private fun StepLeadIcon(completed: Boolean, isCurrent: Boolean, index: Int) {
     }
 }
 
-/** Done screen: coffee identification, unless this was an empty quick-start session. */
+/** Done screen: coffee identification, unless this was an empty quick-start session.
+ *  Blind, un-revealed sessions show positions only and offer the explicit
+ *  "Reveal identities" action (never automatic, not reversible). */
 @Composable
-private fun FinishedContent(vm: CuppingViewModel, plan: CuppingPlan) {
+private fun FinishedContent(
+    vm: CuppingViewModel,
+    plan: CuppingPlan,
+    sessionId: String?,
+    blindRevealed: Boolean,
+) {
     if (plan.coffees.isEmpty()) {
         Text(
             "Empty Cupping Session",
@@ -506,13 +554,49 @@ private fun FinishedContent(vm: CuppingViewModel, plan: CuppingPlan) {
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            "Identify each cup below by its colour and number. The session was saved to your history.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        CoffeeListCard(coffees = plan.coffees)
+        var confirmReveal by remember { mutableStateOf(false) }
+        when {
+            plan.blind && !blindRevealed -> {
+                Text(
+                    "Identities stay hidden until you reveal them. The session was saved " +
+                        "to your history.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                BlindCoffeeListCard(cupCount = plan.cupCount)
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { confirmReveal = true }) {
+                    Text("Reveal identities")
+                }
+            }
+            else -> {
+                Text(
+                    if (plan.blind) {
+                        "Identities are revealed. The session was saved to your history."
+                    } else {
+                        "Identify each cup below by its colour and number. " +
+                            "The session was saved to your history."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                CoffeeListCard(coffees = plan.coffees)
+            }
+        }
+        if (confirmReveal && sessionId != null) {
+            ConfirmDialog(
+                title = "Reveal identities?",
+                text = "Cup names, numbers and colours become visible. This cannot be undone.",
+                confirmLabel = "Reveal",
+                onConfirm = {
+                    vm.revealBlind(sessionId)
+                    confirmReveal = false
+                },
+                onDismiss = { confirmReveal = false },
+            )
+        }
     }
     Spacer(modifier = Modifier.height(16.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
