@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -31,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.cupnlog.data.CuppingDraft
@@ -133,32 +131,29 @@ fun SetupScreen(vm: CuppingViewModel) {
             )
 
             Spacer(modifier = Modifier.height(12.dp))
+            // Title and switch on one line; the explanation sits below at the
+            // full width so it wraps naturally.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Cap the helper text at half the screen width so it reads as
-                // a compact block; the spacer keeps the switch at the right
-                // edge. (A weighted column here would force its exact width
-                // past any widthIn cap.)
-                Column(
-                    modifier = Modifier.widthIn(max = LocalConfiguration.current.screenWidthDp.dp / 2)
-                ) {
-                    Text("Blind tasting", style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        "Each cup is labeled underneath and the cups get mixed, so you " +
-                            "don't know which is which. Coffee names appear only after " +
-                            "you identify each cup by its label.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    "Blind tasting",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
                 Switch(
                     checked = draft.blind,
                     onCheckedChange = { vm.setBlind(it) },
                 )
             }
+            Text(
+                "Each cup is labeled underneath and the cups get mixed, so you " +
+                    "don't know which is which. Coffee names appear only after " +
+                    "you identify each cup by its label.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
