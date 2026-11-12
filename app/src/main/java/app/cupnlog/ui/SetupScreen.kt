@@ -138,11 +138,11 @@ fun SetupScreen(vm: CuppingViewModel) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Cap the helper text at half the screen width so it reads as
-                // a compact block instead of stretching the full row.
+                // a compact block; the spacer keeps the switch at the right
+                // edge. (A weighted column here would force its exact width
+                // past any widthIn cap.)
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .widthIn(max = LocalConfiguration.current.screenWidthDp.dp / 2)
+                    modifier = Modifier.widthIn(max = LocalConfiguration.current.screenWidthDp.dp / 2)
                 ) {
                     Text("Blind tasting", style = MaterialTheme.typography.bodyLarge)
                     Text(
@@ -152,6 +152,7 @@ fun SetupScreen(vm: CuppingViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                Spacer(modifier = Modifier.weight(1f))
                 Switch(
                     checked = draft.blind,
                     onCheckedChange = { vm.setBlind(it) },
