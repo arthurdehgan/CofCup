@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -135,7 +136,13 @@ fun SetupScreen(vm: CuppingViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                // Cap the helper text width so it reads as a compact block
+                // instead of stretching the full row next to the switch.
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .widthIn(max = 260.dp)
+                ) {
                     Text("Blind tasting", style = MaterialTheme.typography.bodyLarge)
                     Text(
                         "Coffees stay anonymous \u2014 cups appear as \u201cCup 1\u2026N\u201d " +
