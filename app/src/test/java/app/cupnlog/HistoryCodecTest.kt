@@ -39,6 +39,12 @@ class HistoryCodecTest {
     }
 
     @Test
+    fun legacy_number_coffees_decode_their_number_as_the_label() {
+        val session = HistoryCodec.decode(legacyJson).single()
+        assertEquals("1", session.plan.coffees.single().label)
+    }
+
+    @Test
     fun legacy_rows_survive_a_round_trip_unchanged() {
         val decoded = HistoryCodec.decode(legacyJson)
         val encoded = HistoryCodec.encode(decoded)
@@ -58,7 +64,7 @@ class HistoryCodecTest {
                 cupSizeMl = 200,
                 cupCount = 2,
                 coffees = listOf(
-                    CoffeeEntry(name = "Kenya", number = 3, colorArgb = 0xFF123456L),
+                    CoffeeEntry(name = "Kenya", label = "3", colorArgb = 0xFF123456L),
                     CoffeeEntry(),
                 ),
             ),

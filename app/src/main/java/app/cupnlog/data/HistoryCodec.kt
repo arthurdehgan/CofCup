@@ -77,7 +77,10 @@ internal object HistoryCodec {
                     add(
                         CoffeeEntry(
                             name = coffee.optString("name", ""),
-                            number = coffee.optInt("number", 0),
+                            // New rows carry a text label; legacy rows only had a number.
+                            label = coffee.optString("label", "").ifBlank {
+                                coffee.optInt("number", 0).takeIf { it > 0 }?.toString().orEmpty()
+                            },
                             colorArgb = coffee.optLong("color", CoffeeEntry.FALLBACK_COLOR),
                         )
                     )
@@ -131,7 +134,7 @@ internal object HistoryCodec {
             coffees.put(
                 JSONObject().apply {
                     put("name", coffee.name)
-                    put("number", coffee.number)
+                    if (coffee.label.isNotBlank()) put("label", coffee.label)
                     put("color", coffee.colorArgb)
                 }
             )

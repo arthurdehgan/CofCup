@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,8 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import app.cupnlog.data.CoffeeEntry
 import app.cupnlog.data.CupColors
 import app.cupnlog.ui.components.SwatchCircle
 
@@ -83,19 +82,18 @@ fun LabelScreen(vm: CuppingViewModel) {
                                 value = coffee.name,
                                 onValueChange = { vm.setCoffeeName(position, it) },
                                 label = { Text("Name") },
-                                placeholder = { Text("Coffee ${coffee.displayNumber.ifBlank { "${position + 1}" }}") },
+                                placeholder = { Text("Coffee ${coffee.displayLabel.ifBlank { "${position + 1}" }}") },
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             OutlinedTextField(
-                                value = coffee.displayNumber,
+                                value = coffee.label,
                                 onValueChange = { raw ->
-                                    val digits = raw.filter { it.isDigit() }.take(2)
-                                    vm.setCoffeeNumber(position, digits.toIntOrNull() ?: 0)
+                                    vm.setCoffeeLabel(position, raw.take(CoffeeEntry.MAX_LABEL_LENGTH))
                                 },
-                                label = { Text("No.") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                label = { Text("Label") },
+                                placeholder = { Text("${position + 1}") },
                                 singleLine = true,
                                 modifier = Modifier.width(88.dp),
                             )

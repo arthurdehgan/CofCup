@@ -1,22 +1,25 @@
 package app.cupnlog.data
 
-/** One cupping cup: what it is called, the number written on it, and its colour. */
+/** One cupping cup: what it is called, the label written under it, and its colour. */
 data class CoffeeEntry(
     val name: String = "",
-    /** 0 means "no number set". */
-    val number: Int = 0,
+    /** Short label under the cup (a number or short text, e.g. "3" or "ESP1"); blank = none. */
+    val label: String = "",
     /** ARGB colour as a Long, e.g. 0xFFE53935L. */
     val colorArgb: Long = FALLBACK_COLOR.toLong(),
 ) {
     val displayName: String
         get() = if (name.isBlank()) FALLBACK_NAME else name
 
-    val displayNumber: String
-        get() = if (number > 0) number.toString() else ""
+    /** The label as shown inside the swatch; blank when none was set. */
+    val displayLabel: String
+        get() = label.trim()
 
     companion object {
         const val FALLBACK_NAME = "Unnamed coffee"
         const val FALLBACK_COLOR = 0xFF90A4AEL
+        /** Labels must stay short enough to fit inside the swatch circle. */
+        const val MAX_LABEL_LENGTH = 6
     }
 }
 
@@ -43,7 +46,7 @@ object CupColors {
 
     fun defaultCoffees(count: Int = palette.size): List<CoffeeEntry> =
         palette.take(count).mapIndexed { index, color ->
-            CoffeeEntry(name = "", number = index + 1, colorArgb = color)
+            CoffeeEntry(name = "", label = (index + 1).toString(), colorArgb = color)
         }
 }
 

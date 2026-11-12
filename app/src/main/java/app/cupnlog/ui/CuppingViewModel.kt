@@ -5,6 +5,7 @@ import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.cupnlog.CupnlogApplication
+import app.cupnlog.data.CoffeeEntry
 import app.cupnlog.data.CupRating
 import app.cupnlog.data.CuppingDraft
 import app.cupnlog.data.CuppingPlan
@@ -208,12 +209,12 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun setCoffeeNumber(index: Int, number: Int) {
+    fun setCoffeeLabel(index: Int, label: String) {
         _draft.update { draft ->
             draft.coffees.getOrNull(index) ?: return@update draft
             draft.copy(
                 coffees = draft.coffees.mapIndexed { i, entry ->
-                    if (i == index) entry.copy(number = number.coerceIn(0, 99)) else entry
+                    if (i == index) entry.copy(label = label.take(CoffeeEntry.MAX_LABEL_LENGTH)) else entry
                 }
             )
         }

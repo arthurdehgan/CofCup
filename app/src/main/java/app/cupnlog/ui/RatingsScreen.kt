@@ -196,7 +196,7 @@ private fun CupRow(cup: Int, plan: CuppingPlan, rating: CupRating?, onClick: () 
             } else {
                 SwatchCircle(
                     colorArgb = coffee?.colorArgb ?: CoffeeEntry.FALLBACK_COLOR,
-                    insideText = coffee?.displayNumber,
+                    insideText = coffee?.displayLabel,
                     size = 40.dp,
                 )
             }

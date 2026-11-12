@@ -12,9 +12,9 @@ class BlindRedactionTest {
     @Test
     fun blind_display_shows_positions_only() {
         val coffees = listOf(
-            CoffeeEntry(name = "Ethiopia", number = 7, colorArgb = 0xFFFF5252L),
-            CoffeeEntry(name = "", number = 2, colorArgb = 0xFF43A047L),
-            CoffeeEntry(name = "Kenya", number = 0, colorArgb = 0xFF42A5F5L),
+            CoffeeEntry(name = "Ethiopia", label = "7", colorArgb = 0xFFFF5252L),
+            CoffeeEntry(name = "", label = "2", colorArgb = 0xFF43A047L),
+            CoffeeEntry(name = "Kenya", label = "", colorArgb = 0xFF42A5F5L),
         )
         val blind = coffees.blindedByPosition()
         assertEquals(listOf("Cup 1", "Cup 2", "Cup 3"), blind.map { it.label })
@@ -38,3 +38,4 @@ class BlindRedactionTest {
         assertEquals(true, blindDoneInstruction(4).contains("1–4"))
     }
 }
+

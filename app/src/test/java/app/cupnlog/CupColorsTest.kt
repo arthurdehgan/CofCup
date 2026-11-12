@@ -33,4 +33,10 @@ class CupColorsTest {
         assertEquals(maxCups, CupColors.defaultCoffees().size)
         assertEquals(maxCups, CuppingDraft().coffees.size)
     }
+
+    @Test
+    fun default_coffees_carry_sequential_number_labels() {
+        val coffees = CupColors.defaultCoffees(4)
+        assertEquals(listOf("1", "2", "3", "4"), coffees.map { it.label })
+    }
 }

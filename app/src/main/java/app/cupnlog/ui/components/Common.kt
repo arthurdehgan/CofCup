@@ -172,7 +172,7 @@ fun CoffeeListCard(coffees: List<CoffeeEntry>, title: String = "Coffee identific
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SwatchCircle(
                         colorArgb = coffee.colorArgb,
-                        insideText = coffee.displayNumber,
+                        insideText = coffee.displayLabel,
                         size = 40.dp,
                     )
                     Spacer(modifier = Modifier.width(12.dp))

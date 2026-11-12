@@ -103,7 +103,7 @@ fun StartCheckScreen(vm: CuppingViewModel) {
                         plan.coffees.forEach { coffee ->
                             SwatchCircle(
                                 colorArgb = coffee.colorArgb,
-                                insideText = coffee.displayNumber,
+                                insideText = coffee.displayLabel,
                                 size = 36.dp,
                             )
                         }
