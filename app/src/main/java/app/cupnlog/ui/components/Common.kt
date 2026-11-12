@@ -22,9 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -181,7 +181,8 @@ fun CoffeeListCard(
     ratingsByCup: Map<Int, CupRating> = emptyMap(),
     title: String = "Coffee identification",
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    // Same outlined look as the "Your ratings" box this card replaced.
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -227,6 +228,7 @@ private fun CoffeeLine(position: Int, coffee: CoffeeEntry, rating: CupRating?) {
                 Text(
                     coffee.displayName,
                     style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     "Position ${position + 1}",
@@ -239,7 +241,7 @@ private fun CoffeeLine(position: Int, coffee: CoffeeEntry, rating: CupRating?) {
                 style = if (rated) {
                     MaterialTheme.typography.titleMedium
                 } else {
-                    MaterialTheme.typography.bodyMedium
+                    MaterialTheme.typography.bodySmall
                 },
                 fontWeight = if (rated) FontWeight.Bold else FontWeight.Normal,
                 color = if (rated) {
@@ -308,7 +310,8 @@ private fun ScoreSquare(field: RatingField, score: Int?, modifier: Modifier = Mo
  *  colours or labels anywhere, including content descriptions. */
 @Composable
 fun BlindCoffeeListCard(cupCount: Int, title: String = "Coffee identification") {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    // Same outlined look as the identified variant of this card.
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
