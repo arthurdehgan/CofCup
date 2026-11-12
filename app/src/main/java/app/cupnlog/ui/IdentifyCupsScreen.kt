@@ -50,9 +50,10 @@ import app.cupnlog.ui.components.SwatchCircle
  * keyed to cup positions; confirming a complete match reorders the saved
  * row's coffees (see `data/CupMatch.kt`) and reveals the names.
  *
- * Only colour + label render here — never the coffee name. The name is the
- * revealed identity; the label is the pseudonym the user wrote under the cup
- * and is the only thing the identification is about.
+ * The coffee name renders beside the label (user decision): the user assigned
+ * both, so their pairing is already known — this screen captures the missing
+ * label→position mapping, it does not hide the pairing. Pre-identification
+ * blind surfaces (cupping, ratings, lists) still render positions only.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -202,7 +203,7 @@ private fun CupAssignRow(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    "Label ${assignedCoffee.displayLabel}",
+                    assignedCoffee.displayName,
                     style = MaterialTheme.typography.bodyLarge,
                 )
             } else {
@@ -224,9 +225,9 @@ private fun CupAssignRow(
 }
 
 /**
- * Picks the coffee for one cup position: swatch + label only (never the name).
- * Coffees already assigned to another position are dimmed and disabled — a
- * label can sit under only one cup.
+ * Picks the coffee for one cup position: swatch (label inside) with the
+ * coffee's name beside it. Coffees already assigned to another position are
+ * dimmed and disabled — a label can sit under only one cup.
  */
 @Composable
 private fun CoffeePickerDialog(
@@ -261,7 +262,11 @@ private fun CoffeePickerDialog(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            if (usedElsewhere) "Already assigned" else "Label ${coffee.displayLabel}",
+                            if (usedElsewhere) {
+                                "${coffee.displayName} (already assigned)"
+                            } else {
+                                coffee.displayName
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
