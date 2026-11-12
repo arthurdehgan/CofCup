@@ -34,11 +34,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -555,17 +555,6 @@ private fun FinishedContent(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 BlindCoffeeListCard(cupCount = plan.cupCount)
-                Spacer(modifier = Modifier.height(16.dp))
-                if (sessionId != null) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Button(onClick = { vm.openIdentifyCups(sessionId, Screen.LiveSession) }) {
-                            Text("Identify the cups")
-                        }
-                    }
-                }
             }
             else -> {
                 Text(
@@ -586,13 +575,30 @@ private fun FinishedContent(
             }
         }
     }
-    Spacer(modifier = Modifier.height(16.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = { vm.goHomeAfterSession() }) {
-            Text("New cupping")
+    // Bottom actions as one full-width stack: the primary next action filled,
+    // the escape hatches outlined below it. Identical rhythm in every variant
+    // (blind, revealed, empty session) — only which action is primary changes.
+    Spacer(modifier = Modifier.height(24.dp))
+    if (plan.blind && !blindRevealed && sessionId != null) {
+        Button(
+            onClick = { vm.openIdentifyCups(sessionId, Screen.LiveSession) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Identify the cups")
         }
-        TextButton(onClick = { vm.goHistoryAfterSession() }) {
-            Text("History")
-        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+    Button(
+        onClick = { vm.goHomeAfterSession() },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text("New cupping")
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedButton(
+        onClick = { vm.goHistoryAfterSession() },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text("History")
     }
 }
