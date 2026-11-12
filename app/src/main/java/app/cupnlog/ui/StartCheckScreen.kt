@@ -115,8 +115,8 @@ fun StartCheckScreen(vm: CuppingViewModel) {
 
             Text(
                 "Set the cups in a row, grind the coffee into each cup, and have the " +
-                    "water at ~93 °C ready. Press \"Start cupping\" at the same moment " +
-                    "water first hits the grounds — that moment is 0:00.",
+                    "water heated and ready. Press \"Start cupping\" at the same moment " +
+                    "water first hits the grounds of the first cup.",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 20.dp),
             )

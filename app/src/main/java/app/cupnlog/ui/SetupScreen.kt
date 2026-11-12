@@ -181,7 +181,7 @@ fun SetupScreen(vm: CuppingViewModel) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Based on the SCA cupping ratio: 5.5g per 100ml",
+                        "Based on the SCA cupping ratio of 5.5g per 100ml",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

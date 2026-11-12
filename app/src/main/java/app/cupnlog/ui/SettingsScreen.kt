@@ -69,14 +69,13 @@ fun SettingsScreen(vm: CuppingViewModel) {
                 ) {
                     SettingRow(
                         title = "Sound on next step",
-                        subtitle = "Play a gentle chime when the timer advances to the next step.",
+                        subtitle = "Play a chime when the timer advances to the next step.",
                         checked = soundOn,
                         onChecked = { vm.setSoundOn(it) },
                     )
                     SettingRow(
                         title = "Vibrate on next step",
-                        subtitle = "Give the phone a quick double pulse when the timer advances " +
-                            "to the next step.",
+                        subtitle = "Vibrate when the timer advances to the next step.",
                         checked = vibrateOn,
                         onChecked = { vm.setVibrateOn(it) },
                     )

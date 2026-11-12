@@ -105,7 +105,7 @@ fun RatingsScreen(vm: CuppingViewModel) {
             CompactTimerCard(elapsedSec = elapsedSec, current = current)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Tap a cup to score it. Rating is optional — the timer never waits for it.",
+                "Tap a cup to score it.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -311,11 +311,6 @@ private fun CupRatingEditor(
                     label = "Overall",
                     value = rating?.scoreFor(RatingField.OVERALL),
                     onValueChange = { vm.setCupRatingScore(cup, RatingField.OVERALL, it) },
-                )
-                Text(
-                    "Yours alone — never computed from the attributes.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(

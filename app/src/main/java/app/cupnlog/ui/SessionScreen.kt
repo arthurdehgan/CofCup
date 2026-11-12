@@ -221,17 +221,9 @@ private fun ReadyToStartContent(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                if (plan.coffees.isEmpty()) {
-                    // Quick start ("Empty Cupping Session"): no cups were set up.
-                    "\u2022 Place your cups in a row, in your tasting order.\n" +
-                        "\u2022 Heat water to ~93 \u00b0C.\n" +
-                        "\u2022 Press START as water first hits the grounds."
-                } else {
-                    "\u2022 Place the ${plan.cupCount} cup${if (plan.cupCount == 1) "" else "s"} in a row, " +
-                        "in your tasting order.\n" +
-                        "\u2022 Grind the ground coffee into each cup and heat water to ~93 \u00b0C.\n" +
-                        "\u2022 Press START as water first hits the grounds."
-                },
+                "\u2022 Heat water while you set up the cups and grind the coffee.\n" +
+                "\u2022 Place your cups in a row.\n" +
+                "\u2022 Press START as water first hits the grounds of the first coffee.",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -296,7 +288,7 @@ private fun SavedSetupPickerChip(
     val blind = session.blind && session.revealedAtMs == null
     val label = when {
         // Blind, un-revealed setups never lose their neutral label (see Home).
-        blind -> "Blind setup · ${session.plan.cupCount} cup" +
+        blind -> "Blind cupping · ${session.plan.cupCount} cup" +
             if (session.plan.cupCount == 1) "" else "s"
         session.plan.sessionName.isNotBlank() -> displaySessionName(session.plan.sessionName)
         else -> "Cupping · ${session.plan.cupCount} cup" +
@@ -526,7 +518,7 @@ private fun FinishedContent(
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            "This session was started straight from the timer, so no cups were labelled. " +
+            "This session was started without a setup, no cups were labelled. " +
                 "It was saved to your history.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -542,7 +534,7 @@ private fun FinishedContent(
         when {
             plan.blind && !blindRevealed -> {
                 Text(
-                    "Identities stay hidden until you reveal them. The session was saved " +
+                    "Coffee names stay hidden until you reveal them. The session was saved " +
                         "to your history.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -557,7 +549,7 @@ private fun FinishedContent(
             else -> {
                 Text(
                     if (plan.blind) {
-                        "Identities are revealed. The session was saved to your history."
+                        "Coffee names are revealed. The session was saved to your history."
                     } else {
                         "Identify each cup below by its colour and number. " +
                             "The session was saved to your history."
@@ -571,7 +563,7 @@ private fun FinishedContent(
         }
         if (confirmReveal && sessionId != null) {
             ConfirmDialog(
-                title = "Reveal identities?",
+                title = "Reveal the coffee names?",
                 text = "Cup names, numbers and colours become visible. This cannot be undone.",
                 confirmLabel = "Reveal",
                 onConfirm = {

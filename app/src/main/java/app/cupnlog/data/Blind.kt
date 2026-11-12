@@ -29,8 +29,8 @@ fun List<CoffeeEntry>.blindedByPosition(): List<BlindCupDisplay> =
 /** Neutral instruction text for the Done step in a blind session. */
 fun blindDoneInstruction(cupCount: Int): String =
     if (cupCount == 1) {
-        "Identify cup 1 afterwards — identities stay hidden until you reveal them."
+        "Identify cup 1 afterwards. Coffee names stay hidden until you reveal them."
     } else {
-        "Identify each cup as 1–$cupCount by its position. Identities stay hidden " +
+        "Identify each cup as 1–$cupCount by its position. Coffee names stay hidden " +
             "until you reveal them."
     }

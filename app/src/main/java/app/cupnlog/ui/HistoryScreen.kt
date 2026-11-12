@@ -109,7 +109,7 @@ fun HistoryScreen(vm: CuppingViewModel) {
             } else {
                 "Remove the session from ${formatDateTime(session.createdAtMs)} " +
                     "(${sessionSummary(session.plan.cupCount, session.plan.cupSizeMl)})? " +
-                    "Its coffee list will be gone for good."
+                    "Its coffee list and ratings will be gone for good."
             },
             confirmLabel = "Delete",
             onConfirm = {

@@ -126,8 +126,7 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
                 // Quick-start ("Empty Cupping Session"): no cups were labelled.
                 OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        "Empty Cupping Session — this session was started straight from " +
-                            "the timer, so there is no coffee list.",
+                        "Empty Cupping Session.",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(16.dp),
                     )
@@ -186,7 +185,7 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
     if (confirmDelete) {
         ConfirmDialog(
             title = "Delete session?",
-            text = "Its coffee list will be gone for good.",
+            text = "Its coffee list and ratings will be gone.",
             confirmLabel = "Delete",
             onConfirm = { vm.deleteSession(session.id) },
             onDismiss = { confirmDelete = false },
@@ -195,7 +194,7 @@ fun SessionDetailScreen(vm: CuppingViewModel, sessionId: String) {
 
     if (confirmReveal) {
         ConfirmDialog(
-            title = "Reveal identities?",
+            title = "Reveal coffee names?",
             text = "Cup names, numbers and colours become visible. This cannot be undone.",
             confirmLabel = "Reveal",
             onConfirm = { vm.revealBlind(session.id); confirmReveal = false },

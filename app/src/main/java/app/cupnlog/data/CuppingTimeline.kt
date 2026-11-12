@@ -45,7 +45,7 @@ object CuppingTimeline {
             title = "Break the crust (smell aromas)",
             instruction = "Put your nose close to the surface and push the crust back " +
                 "three times with the back of a spoon. The released burst of aroma is the " +
-                "strongest the coffee will give — note what you smell. " +
+                "strongest the coffee will give. Note the smelled aromas and rate the intensity. " +
                 "Rinse the spoon in hot water between cups, then leave the cups alone " +
                 "while the grounds sink back before you skim.",
             startSec = STEEP_SECONDS,
@@ -55,7 +55,7 @@ object CuppingTimeline {
             title = "Clean the top of the cup",
             instruction = "Skim off the foam and any floating grounds with one or two " +
                 "spoons until the surface is clean, rinsing the spoons between cups. " +
-                "Then let the coffee cool towards ~70 °C.",
+                "Then let the coffee cool down for the first cupping round.",
             startSec = BREAK_END_SECONDS,
             endSec = CLEAN_END_SECONDS,
         ),
@@ -64,23 +64,22 @@ object CuppingTimeline {
             instruction = "Take half a spoonful and slurp it hard, so the coffee sprays " +
                 "across your whole palate. At around 70 °C focus on aroma, flavour, " +
                 "acidity, body and aftertaste. Go cup by cup, rinsing the spoon between " +
-                "samples, and spit if you are tasting many coffees.",
+                "samples.",
             startSec = CLEAN_END_SECONDS,
             endSec = ROUND1_END_SECONDS,
         ),
         CuppingStep(
             title = "Second cupping round",
-            instruction = "Taste down the row again while the cups cool further " +
-                "(roughly 55 °C and falling). Sweetness becomes clearer, acidity opens " +
-                "up, and defects start to show. Note what changes compared to the first round.",
+            instruction = "Taste down the row again while the cups cool further. " +
+                "Sweetness becomes clearer, acidity opens up and defects " +
+                "start to show. Note what changes compared to the first round.",
             startSec = ROUND1_END_SECONDS,
             endSec = ROUND2_END_SECONDS,
         ),
         CuppingStep(
             title = "Optional third cupping round",
             instruction = "One more pass near room temperature, if you have time: this is " +
-                "where faint flaws and the final aftertaste show up most clearly. " +
-                "Skip it if the cups are too bland — the session moves to \"done\" either way.",
+                "where faint flaws and the final aftertaste show up most clearly.",
             startSec = ROUND2_END_SECONDS,
             endSec = ROUND3_END_SECONDS,
         ),
