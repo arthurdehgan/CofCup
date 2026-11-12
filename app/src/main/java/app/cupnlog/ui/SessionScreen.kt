@@ -342,7 +342,9 @@ private fun SavedSetupPickerChip(
     }
 }
 
-/** Timer running: header timer, steps with timestamps, current instructions. */
+/** Timer running: the current step's title with the elapsed timer inside a
+ *  progress ring (the ring itself fills across the current step), then the
+ *  step timeline — where the current row shows the live clock. */
 @Composable
 private fun RunningContent(plan: CuppingPlan, elapsedSec: Long, current: CuppingStep) {
     val next = CuppingTimeline.nextStep(current)
@@ -354,35 +356,15 @@ private fun RunningContent(plan: CuppingPlan, elapsedSec: Long, current: Cupping
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "Current step",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    current.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    "Time lapsed  ${CuppingMath.formatClock(elapsedSec)}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-                next?.let {
-                    Text(
-                        "Next: ${it.title} in " +
-                            CuppingMath.formatClock(CuppingTimeline.secondsUntil(elapsedSec, it)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            Text(
+                current.title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
             if (next != null) {
                 Box(
-                    modifier = Modifier.size(84.dp),
+                    modifier = Modifier.size(92.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(
@@ -390,11 +372,11 @@ private fun RunningContent(plan: CuppingPlan, elapsedSec: Long, current: Cupping
                             CuppingTimeline.countdownFraction(elapsedSec, current, next)
                         },
                         strokeWidth = 6.dp,
-                        modifier = Modifier.size(84.dp),
+                        modifier = Modifier.size(92.dp),
                     )
                     Text(
-                        CuppingMath.formatClock(CuppingTimeline.secondsUntil(elapsedSec, next)),
-                        style = MaterialTheme.typography.labelLarge,
+                        CuppingMath.formatClock(elapsedSec),
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
@@ -473,8 +455,10 @@ private fun StepRow(step: CuppingStep, index: Int, elapsedSec: Long, isCurrent: 
         ) {
             StepLeadIcon(completed = completed, isCurrent = isCurrent, index = index + 1)
             Spacer(modifier = Modifier.width(10.dp))
+            // The current step shows the live elapsed clock; other rows keep
+            // their fixed start timestamps.
             Text(
-                CuppingMath.formatClock(step.startSec),
+                CuppingMath.formatClock(if (isCurrent) elapsedSec else step.startSec),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.width(48.dp),
             )
