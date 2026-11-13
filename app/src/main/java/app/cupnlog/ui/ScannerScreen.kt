@@ -170,7 +170,13 @@ private fun ScannerView(vm: CuppingViewModel) {
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> barcodeView.decodeContinuous(callback)
+                Lifecycle.Event.ON_RESUME -> {
+                    // decodeContinuous() only sets the decode mode; the camera
+                    // is opened and the preview started by resume() alone
+                    // (CameraPreview's contract: both must be called).
+                    barcodeView.resume()
+                    barcodeView.decodeContinuous(callback)
+                }
                 Lifecycle.Event.ON_PAUSE -> barcodeView.pause()
                 else -> {}
             }
