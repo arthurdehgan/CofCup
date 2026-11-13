@@ -1,7 +1,7 @@
 package app.cupnlog.ui
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -30,7 +30,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.cupnlog.data.CuppingDraft
 import app.cupnlog.data.CuppingMath
@@ -68,13 +70,33 @@ fun SetupScreen(vm: CuppingViewModel) {
             //     modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
             // )
 
-            // Optional display name: shown for this session's saved setups.
-            OutlinedTextField(
+            // Optional display name, shown for this session's saved setups.
+            // Deliberately borderless — an "invisible" text field: the
+            // placeholder explains what it is while it's empty, and once a
+            // name is typed it grows to headline size, acting as the page
+            // title above the rest of the form.
+            BasicTextField(
                 value = draft.sessionName,
                 onValueChange = { vm.setSessionName(it) },
                 singleLine = true,
-                label = { Text("Session name (optional)") },
-                placeholder = { Text("e.g. Saturday morning cupping") },
+                textStyle = (if (draft.sessionName.isEmpty()) {
+                    MaterialTheme.typography.bodyLarge
+                } else {
+                    MaterialTheme.typography.headlineMedium
+                }).copy(color = MaterialTheme.colorScheme.onSurface),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                decorationBox = { innerTextField ->
+                    Box(modifier = Modifier.padding(vertical = 12.dp)) {
+                        if (draft.sessionName.isEmpty()) {
+                            Text(
+                                "Session name",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        innerTextField()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
@@ -96,17 +118,24 @@ fun SetupScreen(vm: CuppingViewModel) {
                 incrementEnabled = draft.cupSizeMl < CuppingDraft.MAX_CUP_SIZE,
             )
             Spacer(modifier = Modifier.height(8.dp))
+            // One chip per preset, each a quarter of the row width so the
+            // row always fills the screen edge to edge.
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 listOf(150, 200, 250, 300).forEach { size ->
                     FilterChip(
                         selected = draft.cupSizeMl == size,
                         onClick = { vm.setCupSize(size) },
-                        label = { Text("$size ml") },
+                        label = {
+                            Text(
+                                "$size ml",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
