@@ -4,8 +4,16 @@ Planning document. This is the reference for the ongoing implementation; it is
 deliberately self-contained so it makes sense without the brainstorming
 conversation behind it.
 
-**Status (2026-11-11).** Phases 0, 1 and 2 are implemented and committed
-(`7efd0ec`, `e63da8e`, `9d812da`). Phases 3–4 remain.
+**Status (2026-11-13).** Phases 0, 1, 2 and 3 are implemented and committed
+(phase 3: share codec `2959368`, share/join screens `d65a6b5`, Pages site
+`a93ea9b`, deep-link fixes `63d7430`). Phase 4 remains. Phase 3 open items:
+enable GitHub Pages in the repo settings (Source: GitHub Actions) so
+`assetlinks.json` goes live and the App Link verifies; the scanner flow and the
+https-entry form still need a real two-device check (paste + custom-scheme
+deep link were verified on the emulator, incl. idempotent re-join and
+queue-during-live-session). Sharing is currently reachable from Home's
+saved-setup chips; a Share action on Setup/StartCheck (save-then-share) is a
+small follow-up.
 
 **v2 note.** This is the GLM plan after reconciliation with
 `feature_plan_deepseek.md`. Deepseek's plan was reviewed against the actual code;
