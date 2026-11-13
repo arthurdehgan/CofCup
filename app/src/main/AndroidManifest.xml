@@ -4,6 +4,13 @@
     <!-- For the optional "Vibrate on next step" chime companion. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- In-app QR scanner (phase 3 join); paste import stays the fallback. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <application
         android:name=".CupnlogApplication"
         android:allowBackup="true"
@@ -20,6 +27,28 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Custom scheme: cofcup://import?v=1&d=… (still accepted everywhere). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="cofcup"
+                    android:host="import" />
+            </intent-filter>
+
+            <!-- The https App Link the QR encodes; autoVerify resolves scans
+                 straight into the app (assetlinks.json on the Pages host). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="arthurdehgan.github.io"
+                    android:pathPrefix="/cupnlog/cofcup/i" />
             </intent-filter>
         </activity>
     </application>

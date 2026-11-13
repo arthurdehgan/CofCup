@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -127,6 +128,7 @@ fun HomeScreen(vm: CuppingViewModel) {
                             session = plannedSetups[index],
                             onRun = { vm.startPlannedRun(plannedSetups[index].id) },
                             onEdit = { vm.editPlannedSetup(plannedSetups[index].id) },
+                            onShare = { vm.openShareSetup(plannedSetups[index].id) },
                             onDelete = { vm.deleteSession(plannedSetups[index].id) },
                         )
                     }
@@ -159,6 +161,16 @@ fun HomeScreen(vm: CuppingViewModel) {
                     fontWeight = FontWeight.SemiBold,
                 )
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = { vm.openScanner() },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    "Join a cupping — scan or paste a code",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
             // Spacer(modifier = Modifier.height(8.dp))
             // Text(
             //     " " +
@@ -174,12 +186,13 @@ fun HomeScreen(vm: CuppingViewModel) {
 }
 
 /** One saved setup on Home: tap runs it straight to StartCheck; ⋮ offers
- *  edit / delete / share (share becomes functional with QR sharing). */
+ *  edit / share (the QR) / delete. */
 @Composable
 private fun PlannedSetupChip(
     session: SavedSession,
     onRun: () -> Unit,
     onEdit: () -> Unit,
+    onShare: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -227,9 +240,7 @@ private fun PlannedSetupChip(
                         DropdownMenuItem(
                             text = { Text("Share") },
                             leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                            onClick = { menuOpen = false },
-                            // Share goes live together with QR sharing (phase 3).
-                            enabled = false,
+                            onClick = { menuOpen = false; onShare() },
                         )
                         DropdownMenuItem(
                             text = { Text("Delete") },

@@ -12,7 +12,9 @@ import app.cupnlog.data.CuppingPlan
 import app.cupnlog.data.CuppingTimeline
 import app.cupnlog.data.RatingField
 import app.cupnlog.data.SavedSession
+import app.cupnlog.data.SessionOrigin
 import app.cupnlog.data.SessionStatus
+import app.cupnlog.data.ShareCodec
 import app.cupnlog.data.reveal
 import app.cupnlog.data.matchAndReveal
 import app.cupnlog.data.toCompleted
@@ -55,6 +57,30 @@ sealed interface Screen {
      * opened from the Finished live screen or from the session detail.
      */
     data class IdentifyCups(val sessionId: String, val returnTo: Screen) : Screen
+
+    /**
+     * Phase 3 share: renders the saved setup's QR (https App Link), with
+     * share-as-text / copy-link / bare-code fallbacks. `returnTo` keeps
+     * `handleBack()` sensible — the screen is opened from Home's saved-setup
+     * chips (and later from Setup/StartCheck).
+     */
+    data class ShareSetup(val sessionId: String, val returnTo: Screen) : Screen
+
+    /**
+     * Phase 3 join: in-app QR scanner with the paste-code fallback below it.
+     * Decoded payloads go through [CuppingViewModel.handleIncoming] and the
+     * confirm preview — the scanner itself never saves anything.
+     */
+    data object Scanner : Screen
+
+    /**
+     * Phase 3 confirm preview: shows exactly what an incoming link / scan /
+     * paste carries and asks before saving anything. The decoded payload (or
+     * decode error) lives in the view model's `incoming` state, not here, so
+     * deep-link errors reuse the same screen. `returnTo` (null → Home) keeps
+     * `handleBack()` sensible.
+     */
+    data class ImportPreview(val returnTo: Screen?) : Screen
 }
 
 /**
@@ -213,6 +239,13 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         initialValue = "",
     )
 
+    /** This device's participant display name (stamped into shared payloads). */
+    val myName: StateFlow<String> = repository.myName.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = "",
+    )
+
     fun setSoundOn(enabled: Boolean) {
         viewModelScope.launch { repository.setSoundOn(enabled) }
     }
@@ -221,11 +254,29 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { repository.setVibrateOn(enabled) }
     }
 
+    /** This device's participant display name (stamped into shared payloads). */
+    fun setMyName(name: String) {
+        viewModelScope.launch { repository.setMyName(name) }
+    }
+
     init {
         viewModelScope.launch {
             while (isActive) {
                 refreshElapsed()
                 delay(200)
+            }
+        }
+        // Deep links land here from MainActivity (onCreate / onNewIntent), via
+        // the application's pending-link holder. Everything routes through
+        // [handleIncoming] — queueing during a live session, confirm preview
+        // otherwise.
+        viewModelScope.launch {
+            val app = getApplication<CupnlogApplication>()
+            app.pendingIncomingLink.collect { text ->
+                if (text != null) {
+                    app.clearPendingIncomingLink()
+                    handleIncoming(text)
+                }
             }
         }
     }
@@ -432,6 +483,16 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _screen.value = Screen.Ratings
     }
 
+    /** "Share" on a saved-setup chip: renders the setup's QR (phase 3). */
+    fun openShareSetup(sessionId: String) {
+        _screen.value = Screen.ShareSetup(sessionId = sessionId, returnTo = Screen.Home)
+    }
+
+    /** "Join a cupping" on Home: in-app scanner, paste-code fallback below it. */
+    fun openScanner() {
+        _screen.value = Screen.Scanner
+    }
+
     /**
      * System/hardware back. Returns true when the press was handled, false when
      * the caller should let the activity finish.
@@ -507,6 +568,20 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
                 _screen.value = current.returnTo
                 true
             }
+            is Screen.ShareSetup -> {
+                _screen.value = current.returnTo
+                true
+            }
+            Screen.Scanner -> {
+                _screen.value = Screen.Home
+                true
+            }
+            is Screen.ImportPreview -> {
+                // Back / cancel: nothing was saved.
+                _incoming.value = null
+                _screen.value = current.returnTo ?: Screen.Home
+                true
+            }
         }
     }
 
@@ -514,6 +589,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     fun discardLiveSession() {
         resetLiveSession()
         _screen.value = Screen.Home
+        popQueuedIncoming()
     }
 
     fun dismissLeaveDialog() {
@@ -674,11 +750,143 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     fun goHomeAfterSession() {
         resetLiveSession()
         _screen.value = Screen.Home
+        popQueuedIncoming()
     }
 
     fun goHistoryAfterSession() {
         resetLiveSession()
         _screen.value = Screen.History
+        popQueuedIncoming()
+    }
+
+    // ------------------------------------------------------------------
+    // Sharing & joining via QR (phase 3)
+    // ------------------------------------------------------------------
+
+    /** What an incoming link / scan / paste carried, decoded. */
+    sealed interface IncomingShare {
+        data class Setup(val setup: ShareCodec.SharedSetup) : IncomingShare
+        data class Error(val error: ShareCodec.ShareError) : IncomingShare
+    }
+
+    /** The payload currently behind the ImportPreview screen, if any. */
+    private val _incoming = MutableStateFlow<IncomingShare?>(null)
+    val incoming: StateFlow<IncomingShare?> = _incoming.asStateFlow()
+
+    /**
+     * An import recognized while a live session was on screen. Never replaces
+     * the live session: a dialog offers to open it now or after the session
+     * ([popQueuedIncoming] surfaces it when the session surface is left).
+     */
+    private val _queuedIncoming = MutableStateFlow<IncomingShare?>(null)
+    val queuedIncoming: StateFlow<IncomingShare?> = _queuedIncoming.asStateFlow()
+
+    /** A last scanned code that wasn't a CofCup share (plain hint on the scanner). */
+    private val _scanHint = MutableStateFlow<String?>(null)
+    val scanHint: StateFlow<String?> = _scanHint.asStateFlow()
+
+    /**
+     * The one entry point for every incoming form (deep link, scanner, paste).
+     * Recognized payloads route to the confirm preview — or queue with a
+     * prompt when a live session is on screen (never replacing the timer).
+     * Non-CofCup codes are ignored (they only ever reach here from the
+     * scanner/paste, where the plain hint is shown in place).
+     *
+     * @return true when the text was recognized as a CofCup payload (valid
+     *   or carrying a CofCup-specific error), false to keep scanning.
+     */
+    fun handleIncoming(text: String): Boolean {
+        val share: IncomingShare = when (val result = ShareCodec.decode(text)) {
+            is ShareCodec.DecodeResult.Success -> IncomingShare.Setup(result.setup)
+            is ShareCodec.DecodeResult.Failure -> {
+                if (result.error == ShareCodec.ShareError.NOT_A_COFCUP_CODE) {
+                    _scanHint.value = result.error.message
+                    return false
+                }
+                IncomingShare.Error(result.error)
+            }
+        }
+        _scanHint.value = null
+        if (_live.value != null) {
+            _queuedIncoming.value = share
+        } else {
+            showIncoming(share, returnTo = _screen.value.takeIf { it !is Screen.ImportPreview })
+        }
+        return true
+    }
+
+    /** Opens the confirm preview for an import (never auto-saves anything). */
+    private fun showIncoming(share: IncomingShare, returnTo: Screen?) {
+        _incoming.value = share
+        _screen.value = Screen.ImportPreview(returnTo = returnTo)
+    }
+
+    /** Dialog action "Open now" on a queued import. */
+    fun openQueuedIncoming() {
+        val queued = _queuedIncoming.value ?: return
+        _queuedIncoming.value = null
+        showIncoming(queued, returnTo = Screen.LiveSession)
+    }
+
+    /** Dialog action "After this session" — the import stays queued. */
+    fun dismissQueuedIncoming() {
+        // Keep the payload queued; only close the prompt.
+    }
+
+    /**
+     * Called when the live-session surface is left (discard, or Home/History
+     * after a finished session): a queued import now shows its confirm
+     * preview, exactly as the prompt promised.
+     */
+    private fun popQueuedIncoming() {
+        val queued = _queuedIncoming.value ?: return
+        _queuedIncoming.value = null
+        showIncoming(queued, returnTo = Screen.Home)
+    }
+
+    /**
+     * Confirm on the import preview: saves the setup as a `planned` / `joined`
+     * row of its own (own UUID in `id`, the host's id in `sessionRef`).
+     * Blind payloads carry no identities, so the joined copy holds blank
+     * coffees rendered as Cup 1…N until the host's reveal lands (phase 4).
+     * Re-joining the same host session replaces the previous joined PLANNED
+     * copy (idempotent, keyed on `sessionRef` + `status=planned`).
+     */
+    fun confirmImport() {
+        val setup = (_incoming.value as? IncomingShare.Setup)?.setup ?: return
+        viewModelScope.launch {
+            val plan = CuppingPlan(
+                cupSizeMl = setup.cupSizeMl,
+                cupCount = setup.cupCount,
+                coffees = setup.coffees.take(setup.cupCount),
+                sessionName = setup.sessionName,
+                blind = setup.blind,
+            )
+            val existing = repository.sessions.first().firstOrNull {
+                it.origin == SessionOrigin.JOINED &&
+                    it.sessionRef == setup.hostSessionId &&
+                    it.status == SessionStatus.PLANNED
+            }
+            val row = (existing ?: SavedSession(
+                id = UUID.randomUUID().toString(),
+                createdAtMs = System.currentTimeMillis(),
+                plan = plan,
+                status = SessionStatus.PLANNED,
+                blind = setup.blind,
+                origin = SessionOrigin.JOINED,
+                hostName = setup.hostName,
+                sessionRef = setup.hostSessionId,
+            )).copy(plan = plan, blind = setup.blind)
+            repository.save(row)
+            _incoming.value = null
+            _screen.value = (_screen.value as? Screen.ImportPreview)?.returnTo ?: Screen.Home
+        }
+    }
+
+    /** Cancel / back on the import preview: nothing was saved. */
+    fun dismissImport() {
+        _incoming.value = null
+        _screen.value = (_screen.value as? Screen.ImportPreview)?.returnTo ?: Screen.Home
     }
 
     // ------------------------------------------------------------------
