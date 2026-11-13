@@ -895,7 +895,10 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             )).copy(plan = plan, blind = setup.blind)
             repository.save(row)
             _incoming.value = null
-            _screen.value = (_screen.value as? Screen.ImportPreview)?.returnTo ?: Screen.Home
+            // A confirmed import always lands on Home: the joined setup lives
+            // there as a chip, ready to run — regardless of where the import
+            // came from (scanner, paste, deep link).
+            _screen.value = Screen.Home
         }
     }
 
