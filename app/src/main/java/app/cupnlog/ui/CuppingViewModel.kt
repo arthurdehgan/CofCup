@@ -20,6 +20,7 @@ import app.cupnlog.data.matchAndReveal
 import app.cupnlog.data.toCompleted
 import app.cupnlog.data.withScore
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -269,13 +270,18 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         // Deep links land here from MainActivity (onCreate / onNewIntent), via
         // the application's pending-link holder. Everything routes through
         // [handleIncoming] — queueing during a live session, confirm preview
-        // otherwise.
-        viewModelScope.launch {
+        // otherwise. Dedup by seq: every entry is handled at most once per
+        // view model, even though all stacked instances share the same holder.
+        // Plain Main (not the implicit Main.immediate): the link must be
+        // handled AFTER the constructor finishes — an immediate dispatch would
+        // run this collector inline while the later-declared state still
+        // doesn't exist.
+        viewModelScope.launch(Dispatchers.Main) {
             val app = getApplication<CupnlogApplication>()
-            app.pendingIncomingLink.collect { text ->
-                if (text != null) {
-                    app.clearPendingIncomingLink()
-                    handleIncoming(text)
+            app.pendingIncomingLink.collect { link ->
+                if (link != null && link.seq > handledLinkSeq) {
+                    handledLinkSeq = link.seq
+                    handleIncoming(link.text)
                 }
             }
         }
@@ -777,13 +783,21 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
      * An import recognized while a live session was on screen. Never replaces
      * the live session: a dialog offers to open it now or after the session
      * ([popQueuedIncoming] surfaces it when the session surface is left).
+     * The prompt has its own visibility flag — "not now" closes the dialog
+     * while the payload stays queued for the session's end.
      */
     private val _queuedIncoming = MutableStateFlow<IncomingShare?>(null)
     val queuedIncoming: StateFlow<IncomingShare?> = _queuedIncoming.asStateFlow()
 
+    private val _showQueuedDialog = MutableStateFlow(false)
+    val showQueuedDialog: StateFlow<Boolean> = _showQueuedDialog.asStateFlow()
+
     /** A last scanned code that wasn't a CofCup share (plain hint on the scanner). */
     private val _scanHint = MutableStateFlow<String?>(null)
     val scanHint: StateFlow<String?> = _scanHint.asStateFlow()
+
+    /** Seq of the last incoming link this view model handled (see the init collect). */
+    private var handledLinkSeq = 0L
 
     /**
      * The one entry point for every incoming form (deep link, scanner, paste).
@@ -809,6 +823,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _scanHint.value = null
         if (_live.value != null) {
             _queuedIncoming.value = share
+            _showQueuedDialog.value = true
         } else {
             showIncoming(share, returnTo = _screen.value.takeIf { it !is Screen.ImportPreview })
         }
@@ -825,12 +840,13 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     fun openQueuedIncoming() {
         val queued = _queuedIncoming.value ?: return
         _queuedIncoming.value = null
+        _showQueuedDialog.value = false
         showIncoming(queued, returnTo = Screen.LiveSession)
     }
 
     /** Dialog action "After this session" — the import stays queued. */
     fun dismissQueuedIncoming() {
-        // Keep the payload queued; only close the prompt.
+        _showQueuedDialog.value = false
     }
 
     /**

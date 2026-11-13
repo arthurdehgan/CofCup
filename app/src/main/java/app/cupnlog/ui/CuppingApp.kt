@@ -40,7 +40,8 @@ fun CuppingApp() {
     // shown — the timer is never replaced. This prompt offers to open it now
     // or let it surface when the session is left (see popQueuedIncoming).
     val queuedIncoming by vm.queuedIncoming.collectAsState()
-    if (queuedIncoming != null) {
+    val showQueuedDialog by vm.showQueuedDialog.collectAsState()
+    if (showQueuedDialog && queuedIncoming != null) {
         ConfirmDialog(
             title = "Open a CofCup link?",
             text = "A shared cupping setup was received. " +
