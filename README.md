@@ -4,7 +4,7 @@ A free, open-source Android app that guides you through a **coffee cupping sessi
 
 ## What it does
 
-1. **Home** — the app opens with the launcher icon, a **history** shortcut, and two buttons: **Start Cupping** jumps straight into the guided timer without any setup (Step 4.), and **Set up cupping** opens the flow below.
+1. **Home** — the app opens with a **history** shortcut and two buttons: **Start Cupping** jumps straight into the guided timer without any setup (Step 4.), and **Set up cupping** opens the flow below.
 
 2. **Set up** — pick your cup size (ml) and how many coffees to cup (1–16).
    The app will tell you how much coffee you will need to grind for each cup according to the SCA ratio, 8.25 g per 150 ml → *5.5 g per 100 ml*, (e.g. exactly `8.25 g` for a 150 ml cup)
@@ -53,10 +53,6 @@ gradle :app:testDebugUnitTest   # runs the ratio/timeline maths unit tests
 ```
 
 > The gradle wrapper (`gradlew` + `gradle/wrapper/*`) **is committed** — run `./gradlew :app:assembleDebug` (Windows: `gradlew.bat`). It also keeps CI and the F-Droid buildserver on the same Gradle 9.6.0.
-
-## Project logo & identity
-
-The launcher icon is a cupping bowl with two small vertical waves rising above it, and the palette is coffee-brown inspired. Screens are portrait-only since the app is a session timer.
 
 ## Roadmap
 
