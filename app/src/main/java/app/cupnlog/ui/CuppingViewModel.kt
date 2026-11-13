@@ -863,10 +863,10 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     /**
      * Confirm on the import preview: saves the setup as a `planned` / `joined`
      * row of its own (own UUID in `id`, the host's id in `sessionRef`).
-     * Blind payloads carry no identities, so the joined copy holds blank
-     * coffees rendered as Cup 1…N until the host's reveal lands (phase 4).
-     * Re-joining the same host session replaces the previous joined PLANNED
-     * copy (idempotent, keyed on `sessionRef` + `status=planned`).
+     * Blind payloads carry full identities (2026-11-13 decision), so the
+     * joined copy can run the same end-of-session identify-by-label as the
+     * host. Re-joining the same host session replaces the previous joined
+     * PLANNED copy (idempotent, keyed on `sessionRef` + `status=planned`).
      */
     fun confirmImport() {
         val setup = (_incoming.value as? IncomingShare.Setup)?.setup ?: return

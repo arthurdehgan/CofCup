@@ -36,8 +36,9 @@ import app.cupnlog.ui.components.sessionSummary
 /**
  * Phase 3 confirm preview: shows exactly what an incoming link / scan / paste
  * carries — host name when known, what would be saved — and asks. Nothing is
- * auto-saved, auto-started or auto-revealed, ever. Blind payloads display no
- * identity they don't carry: their preview is "Cup 1…N" only.
+ * auto-saved, auto-started or auto-revealed, ever. Blind previews render
+ * "Cup 1…N" only — the payload carries identities, but showing them here
+ * would spoil the joiner's own blind tasting before it starts.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,10 +120,12 @@ fun ImportPreviewScreen(vm: CuppingViewModel) {
                                 .padding(16.dp),
                         ) {
                             if (setup.blind) {
-                                // Blind payloads carry no identities at all —
-                                // positions only, exactly what the joiner gets.
+                                // The payload carries identities, but the
+                                // preview deliberately shows positions only:
+                                // reading the names here would spoil the
+                                // joiner's own blind tasting before it starts.
                                 Text(
-                                    "Blind set-up · ${setup.cupCount} cups (identities hidden)",
+                                    "Blind set-up · ${setup.cupCount} cups (names stay hidden until after the cupping)",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                 )

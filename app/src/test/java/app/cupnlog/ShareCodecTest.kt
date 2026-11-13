@@ -266,48 +266,32 @@ class ShareCodecTest {
     }
 
     // ------------------------------------------------------------------
-    // Blind privacy
+    // Blind identities (carried, 2026-11-13 decision)
     // ------------------------------------------------------------------
 
     @Test
-    fun blindRoundTrip_noIdentitiesAnywhere() {
+    fun blindRoundTrip_carriesIdentities() {
         val encode = encoded(session(blind = true))
-        // The decompressed payload JSON must carry no coffee identity at all:
-        // no names, no labels, no colours, no coffee array.
-        val json = String(
-            java.util.zip.Inflater().apply { setInput(Base64.getUrlDecoder().decode(encode.code)) }
-                .let { inflater ->
-                    val out = ByteArrayOutputStream()
-                    val buffer = ByteArray(4096)
-                    while (!inflater.finished()) out.write(buffer, 0, inflater.inflate(buffer))
-                    inflater.end()
-                    out.toByteArray()
-                },
-        )
-        coffees.forEach { coffee ->
-            if (coffee.name.isNotBlank()) {
-                assertFalse("payload was: $json", json.contains(coffee.name))
-            }
-        }
-        assertFalse(json.contains("\"co\""))
-        assertFalse(json.contains("\"n\""))
-        assertFalse(json.contains("\"l\""))
-        assertFalse(json.contains("\"c\""))
-        // …and decodes to blank position-only placeholders.
+        // The blind payload carries the full identities so the joiner's copy
+        // can run the same end-of-session identify-by-label as the host; only
+        // the row's blind flag (the kind) differs from a full share.
         val decoded = decodeSetup(encode.url)
         assertTrue(decoded.blind)
         assertEquals(3, decoded.cupCount)
-        assertEquals(List(3) { CoffeeEntry() }, decoded.coffees)
+        assertEquals(coffees, decoded.coffees)
     }
 
     @Test
-    fun blindPayload_withInjectedIdentity_rejected() {
+    fun blindPayload_rejectsOnlyStructuralIssues() {
+        // Identity data is no longer special-cased for blind: a blind payload
+        // fails on the same structural rules as a full one (e.g. array/count
+        // mismatch), never because it carries names or colours.
         assertEquals(
-            ShareError.BLIND_IDENTITY,
+            ShareError.INVALID_DATA,
             decodeError(
                 payload(
                     """{"v":1,"kind":"blind_setup","sid":"x","ml":150,"cups":2,"co":[""" +
-                        """{"n":"Ethiopia","l":"1","c":-1614531},{"n":"Kenya","l":"2","c":-1}]}""",
+                        """{"n":"Ethiopia","l":"1","c":-1614531},{"n":"Kenya","l":"2","c":-1},{"n":"X","c":-2}]}""",
                 ),
             ),
         )

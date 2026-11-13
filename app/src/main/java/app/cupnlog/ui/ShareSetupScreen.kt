@@ -117,7 +117,7 @@ fun ShareSetupScreen(vm: CuppingViewModel, sessionId: String) {
             // blind payload carries none.
             Text(
                 if (session.blind) {
-                    "Blind set-up · ${session.plan.cupCount} cups (identities hidden)"
+                    "Blind set-up · ${session.plan.cupCount} cups (names stay hidden until after the cupping)"
                 } else {
                     "Full set-up · ${session.plan.cupCount} cups"
                 },

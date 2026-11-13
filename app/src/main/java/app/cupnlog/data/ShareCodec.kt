@@ -25,10 +25,14 @@ import java.util.zip.Inflater
  *   {"v":1,"kind":"setup","sid":"…","host":"…","name":"…","ml":150,"cups":4,
  *    "co":[{"n":"Ethiopia","l":"1","c":-1614531}]}
  *
- * `kind` discriminates the payload: "setup" (full, non-blind) and "blind_setup"
- * (no identities at all — names, labels and colours stay host-side; any
- * identity data injected into a blind payload is rejected). "ratings" and
- * "group_results" arrive in phase 4 and are rejected here.
+ * `kind` discriminates the payload: "setup" (non-blind) and "blind_setup".
+ * Both carry the full coffee identities (names, labels, colours): the joiner's
+ * blind copy must be able to run the same end-of-session identify-by-label as
+ * the host (user decision, 2026-11-13 — the earlier "no identities at all"
+ * rule left the joiner with nothing meaningful to identify). The joiner's copy
+ * still behaves as blind — positions only on every pre-reveal surface —
+ * because the kind marks the row blind, not because data is withheld.
+ * "ratings" and "group_results" arrive in phase 4 and are rejected here.
  *
  * Everything is untrusted: strict version/kind checks, bounded sizes, cup
  * size/count ranges, per-coffee caps, a decompression-bomb cap, and a ~2 KB
@@ -93,12 +97,12 @@ object ShareCodec {
         val sessionName: String = "",
         val cupSizeMl: Int,
         val cupCount: Int,
-        /** True for blind payloads: [coffees] is position-only placeholder data. */
+        /** True for blind payloads: the joiner's copy stays blind (positions
+         *  only on pre-reveal surfaces), but [coffees] carry full identities
+         *  so the end-of-session identify works exactly like the host's. */
         val blind: Boolean,
         /**
-         * The coffees as received. Non-blind: real names/labels/colours.
-         * Blind: `cupCount` blank entries (the joiner renders Cup 1…N until
-         * the host's reveal lands, phase 4).
+         * The coffees as received — real names/labels/colours for both kinds.
          */
         val coffees: List<CoffeeEntry>,
     )
@@ -115,7 +119,6 @@ object ShareCodec {
         UNKNOWN_KIND("This code isn't a shareable CofCup item."),
         MALFORMED("This code is damaged or incomplete. Ask for a fresh one."),
         INVALID_DATA("This code holds values CofCup doesn't accept."),
-        BLIND_IDENTITY("This blind setup carries identity data it shouldn't have."),
         TOO_LARGE("This code is too large to scan reliably. Ask the host to share it as text."),
     }
 
@@ -150,18 +153,17 @@ object ShareCodec {
         }
         json.put("ml", session.plan.cupSizeMl)
         json.put("cups", session.plan.cupCount)
-        // Blind payloads carry NO identities: no "co" array at all.
-        if (kind == KIND_SETUP) {
-            val coffees = JSONArray()
-            session.plan.coffees.take(session.plan.cupCount).forEach { coffee ->
-                val entry = JSONObject()
-                if (coffee.name.isNotBlank()) entry.put("n", coffee.name.take(NAME_MAX))
-                if (coffee.label.isNotBlank()) entry.put("l", coffee.label.take(CoffeeEntry.MAX_LABEL_LENGTH))
-                entry.put("c", coffee.colorArgb)
-                coffees.put(entry)
-            }
-            json.put("co", coffees)
+        // Both kinds carry full identities: a blind joiner's copy must be able
+        // to identify by label at the end of the session (see header comment).
+        val coffees = JSONArray()
+        session.plan.coffees.take(session.plan.cupCount).forEach { coffee ->
+            val entry = JSONObject()
+            if (coffee.name.isNotBlank()) entry.put("n", coffee.name.take(NAME_MAX))
+            if (coffee.label.isNotBlank()) entry.put("l", coffee.label.take(CoffeeEntry.MAX_LABEL_LENGTH))
+            entry.put("c", coffee.colorArgb)
+            coffees.put(entry)
         }
+        json.put("co", coffees)
         val code = compressAndEncode(json.toString())
         val url = "https://$APP_LINK_HOST$APP_LINK_PATH?v=$VERSION&d=$code"
         return ShareEncode(url = url, code = code, fitsQr = url.length <= QR_SAFE_URL_CHARS)
@@ -252,18 +254,10 @@ object ShareCodec {
         if (cupCount !in MIN_CUPS..MAX_CUPS) throw ShareException(ShareError.INVALID_DATA)
 
         val blind = kind == KIND_BLIND_SETUP
-        val coffees: List<CoffeeEntry> = if (blind) {
-            // Strict privacy: a blind payload must carry no identities at all.
-            // Any injected "co" array is rejected, not stripped — an injected
-            // name/label/colour must never display.
-            val injected = json.optJSONArray("co")
-            if (injected != null && injected.length() > 0) {
-                throw ShareException(ShareError.BLIND_IDENTITY)
-            }
-            List(cupCount) { CoffeeEntry() }
-        } else {
-            decodeCoffees(json.optJSONArray("co"), cupCount)
-        }
+        // Both kinds decode identities the same way: the blind joiner's copy
+        // needs names/labels/colours to run the end-of-session identify (the
+        // row stays blind through `blind`, not through withheld data).
+        val coffees = decodeCoffees(json.optJSONArray("co"), cupCount)
 
         return SharedSetup(
             hostSessionId = sid,

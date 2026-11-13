@@ -105,11 +105,15 @@ in §1; the rest of the document is the single authoritative spec.
    "Ask the host for the reveal" copy rather than invented names.
 8. **Blind = position-based identity.** Visible identity in a blind session is
    **Cup 1…N by left-to-right position**; custom numbers, colors, and names are
-   private metadata. Blind payloads contain **no identities at all** (stronger
-   than GLM's original "strip names, keep numbers/colors" — adopted, simpler and
-   strictly more private). Blind display must also stay out of content
+   private metadata. Blind display must also stay out of content
    descriptions/accessibility and copy like the Done step instruction (handled as
    a blind-aware variant without moving step *windows* out of `CuppingTimeline`).
+   *(Amended 2026-11-13: blind payloads now carry the full coffee identities —
+   the earlier "no identities at all" rule left the joiner with nothing to
+   identify at the end of the session. The joiner's copy still renders blind
+   positions-only on every pre-reveal surface, and the import preview stays
+   position-only so the joiner doesn't spoil their own tasting; the trade-off
+   is that the QR becomes the answer key for anyone who decodes it.)*
 9. **Blind leak checklist + "history rows hide swatches for blind sessions"**
    (deepseek §3.3/§3.8) — a screen-by-screen audit gate before shipping blind
    mode; neutral "Blind cupping · N cups" labels everywhere identity would leak.
@@ -368,9 +372,10 @@ decodes untouched. No Room, no serialization plugin, no migration script.
     running queues + prompts, never interrupts the timer.
 - **Join semantics (GLM history-tailoring)**: Accept saves a `planned`/`joined`
   row for the joiner (its own UUID in `id`), plus `sessionRef = host id`.
-  Blind payloads contain **no identities at all** (strict deepseek version): names,
-  numbers and colors stay host-side; the joiner's blind copy shows positions
-  only. Re-scanning the same host session id **replaces** the previous joined
+  Blind payloads carry the **full coffee identities** (amended 2026-11-13, see
+  decision 8): the joiner's blind copy renders positions only pre-reveal, but
+  the end-of-session identify-by-label works exactly like the host's.
+  Re-scanning the same host session id **replaces** the previous joined
   planned copy (idempotent, keyed on `sessionRef` + `status=planned`).
 - Manifest: one `VIEW` intent filter for `cofcup` (single `import` path) **and**
   a second, `autoVerify` `VIEW` intent filter for the https App Link
