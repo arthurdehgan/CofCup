@@ -1,4 +1,4 @@
-# CofCup ☕
+# Cup 'n Log ☕
 
 A free, open-source Android app that guides you through a **coffee cupping session**, step by step, with timers.
 
@@ -6,7 +6,7 @@ A free, open-source Android app that guides you through a **coffee cupping sessi
 
 1. **Home** — the app opens with the launcher icon, a **history** shortcut, and two buttons: **Start Cupping** jumps straight into the guided timer without any setup (Step 4.), and **Set up cupping** opens the flow below.
 
-2. **Set up** — pick your cup size (ml) and how many coffees to cup (1–12).
+2. **Set up** — pick your cup size (ml) and how many coffees to cup (1–16).
    The app will tell you how much coffee you will need to grind for each cup according to the SCA ratio, 8.25 g per 150 ml → *5.5 g per 100 ml*, (e.g. exactly `8.25 g` for a 150 ml cup)
 
 3. **Name the coffees** — You can associate a **number** and a **colour** to each coffee and give it a name to be able to find which cup had which coffee at the end of the session.
@@ -52,7 +52,7 @@ gradle :app:assembleDebug
 gradle :app:testDebugUnitTest   # runs the ratio/timeline maths unit tests
 ```
 
-> The wrapper JAR is not committed (generated projects are lighter); Android Studio picks the Gradle version from `gradle-wrapper.properties`, and CI installs Gradle explicitly. Run `gradle wrapper` locally if you want `./gradlew` scripts.
+> The gradle wrapper (`gradlew` + `gradle/wrapper/*`) **is committed** — run `./gradlew :app:assembleDebug` (Windows: `gradlew.bat`). It also keeps CI and the F-Droid buildserver on the same Gradle 9.6.0.
 
 ## Project logo & identity
 

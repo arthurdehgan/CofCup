@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.cupnlog",
+      "sha256_cert_fingerprints": [
+        "38:2C:71:50:24:AA:E4:2A:D2:27:BA:F9:49:F6:86:27:25:7D:E2:78:B2:32:D3:85:B6:2C:CF:7C:F1:CD:5F:B7"
+      ]
+    }
+  }
+]

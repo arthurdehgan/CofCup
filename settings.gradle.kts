@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "CofCup"
+rootProject.name = "CupNLog"
 include(":app")
