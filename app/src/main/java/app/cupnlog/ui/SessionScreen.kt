@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -292,8 +293,8 @@ private fun ReadyToStartContent(
 
 /** One saved setup on the pre-start "Cupping" screen: tap loads it into the
  *  session that is about to start (its planned row converts to done on Done).
- *  Blind, un-revealed rows show a neutral label — names, labels and colours
- *  are never rendered here. */
+ *  Blind, un-revealed rows show a crossed-eye icon after the subtitle — names,
+ *  labels and colours are never rendered here. */
 @Composable
 private fun SavedSetupPickerChip(
     session: SavedSession,
@@ -301,14 +302,11 @@ private fun SavedSetupPickerChip(
     onSelect: () -> Unit,
 ) {
     val blind = session.blind && session.revealedAtMs == null
-    val label = when {
-        // The session name never leaks cup identity, so blind setups show it
-        // too; the neutral label is only the unnamed fallback (see Home).
-        session.plan.sessionName.isNotBlank() -> displaySessionName(session.plan.sessionName)
-        blind -> "Blind cupping · ${session.plan.cupCount} cup" +
-            if (session.plan.cupCount == 1) "" else "s"
-        else -> "Cupping · ${session.plan.cupCount} cup" +
-            if (session.plan.cupCount == 1) "" else "s"
+    val label = if (session.plan.sessionName.isNotBlank()) {
+        // The session name never leaks cup identity, so blind setups show it too.
+        displaySessionName(session.plan.sessionName)
+    } else {
+        "Unnamed setup"
     }
 
     Surface(
@@ -331,12 +329,23 @@ private fun SavedSetupPickerChip(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                "${session.plan.cupSizeMl} ml per cup",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${session.plan.cupSizeMl} ml per cup",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+                if (blind) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        Icons.Filled.VisibilityOff,
+                        contentDescription = "Blind setup",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
         }
     }
 }

@@ -17,13 +17,13 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -46,6 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import android.widget.ImageView
 import androidx.compose.ui.viewinterop.AndroidView
 import app.cupnlog.R
@@ -185,6 +187,28 @@ fun HomeScreen(vm: CuppingViewModel) {
     }
 }
 
+/** One row of the saved-setup popup: a tight icon + text row (M3's
+ *  DropdownMenuItem has a built-in 112 dp minimum width, so the rows are
+ *  hand-rolled to keep the popup close to its content). */
+@Composable
+private fun SavedSetupMenuItem(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .height(48.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
 /** One saved setup on Home: tap runs it straight to StartCheck; ⋮ offers
  *  edit / share (the QR) / delete. */
 @Composable
@@ -197,14 +221,11 @@ private fun PlannedSetupChip(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val blind = session.blind && session.revealedAtMs == null
-    val label = when {
-        // The session name never leaks cup identity, so blind setups show it
-        // too; the neutral label is only the unnamed fallback.
-        session.plan.sessionName.isNotBlank() -> displaySessionName(session.plan.sessionName)
-        blind -> "Blind setup · ${session.plan.cupCount} cup" +
-            if (session.plan.cupCount == 1) "" else "s"
-        else -> "Cupping · ${session.plan.cupCount} cup" +
-            if (session.plan.cupCount == 1) "" else "s"
+    val label = if (session.plan.sessionName.isNotBlank()) {
+        // The session name never leaks cup identity, so blind setups show it too.
+        displaySessionName(session.plan.sessionName)
+    } else {
+        "Unnamed setup"
     }
 
     Surface(
@@ -231,31 +252,60 @@ private fun PlannedSetupChip(
                             modifier = Modifier.size(20.dp),
                         )
                     }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Edit") },
-                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                            onClick = { menuOpen = false; onEdit() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Share") },
-                            leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                            onClick = { menuOpen = false; onShare() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete") },
-                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                            onClick = { menuOpen = false; onDelete() },
-                        )
+                    // M3's DropdownMenu always opens downward from its anchor;
+                    // this popup aligns to the box's bottom edge so the menu
+                    // grows upwards from the ⋮ button instead. It must be gated
+                    // on menuOpen — a Popup renders whenever it is composed.
+                    if (menuOpen) {
+                        Popup(
+                            alignment = Alignment.BottomStart,
+                            onDismissRequest = { menuOpen = false },
+                            properties = PopupProperties(focusable = true),
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                shadowElevation = 3.dp,
+                            ) {
+                                Column {
+                                    SavedSetupMenuItem(
+                                        icon = Icons.Default.Edit,
+                                        label = "Edit",
+                                        onClick = { menuOpen = false; onEdit() },
+                                    )
+                                    SavedSetupMenuItem(
+                                        icon = Icons.Default.Share,
+                                        label = "Share",
+                                        onClick = { menuOpen = false; onShare() },
+                                    )
+                                    SavedSetupMenuItem(
+                                        icon = Icons.Default.Delete,
+                                        label = "Delete",
+                                        onClick = { menuOpen = false; onDelete() },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
-            Text(
-                "${session.plan.cupSizeMl} ml per cup",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${session.plan.cupCount} coffee" + if (session.plan.cupCount == 1) "" else "s",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+                if (blind) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        Icons.Filled.VisibilityOff,
+                        contentDescription = "Blind setup",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
         }
     }
 }
