@@ -157,6 +157,11 @@ fun StartCheckScreen(vm: CuppingViewModel) {
                         Text("Save setup")
                     }
                 }
+                TextButton(
+                    onClick = { vm.shareSetupFromStartCheck() },
+                ) {
+                    Text("Share setup")
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
         }

@@ -918,32 +918,63 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
     // ------------------------------------------------------------------
 
     /** Serializes the current draft into a `planned` row. When the draft was
-     *  loaded from a planned chip edit, the SAME row is updated instead. */
-    fun saveSetup() {
+     *  loaded from a planned chip edit, the SAME row is updated instead.
+     *  Returns the saved row's id (used by the save-then-share flow). */
+    private suspend fun persistDraftAsPlanned(): String {
         val plan = _draft.value.toPlan()
         val editingId = editingPlannedSessionId
+        val original = if (editingId != null) {
+            repository.sessions.first().firstOrNull { it.id == editingId }
+        } else {
+            null
+        }
+        val session = original
+            ?: SavedSession(
+                id = UUID.randomUUID().toString(),
+                createdAtMs = System.currentTimeMillis(),
+                plan = plan,
+                status = SessionStatus.PLANNED,
+            )
+        // The plan the draft holds is authoritative for blind too: editing a
+        // planned row and toggling blind off updates the SAME row's flag.
+        val row = session.copy(plan = plan, status = SessionStatus.PLANNED, blind = plan.blind)
+        repository.save(row)
+        return row.id
+    }
+
+    fun saveSetup() {
         viewModelScope.launch {
-            val original = if (editingId != null) {
-                repository.sessions.first().firstOrNull { it.id == editingId }
-            } else {
-                null
-            }
-            val session = original
-                ?: SavedSession(
-                    id = UUID.randomUUID().toString(),
-                    createdAtMs = System.currentTimeMillis(),
-                    plan = plan,
-                    status = SessionStatus.PLANNED,
-                )
-            // The plan the draft holds is authoritative for blind too: editing a
-            // planned row and toggling blind off updates the SAME row's flag.
-            repository.save(session.copy(plan = plan, status = SessionStatus.PLANNED, blind = plan.blind))
+            persistDraftAsPlanned()
             editingPlannedSessionId = null
             // Saving leaves for Home: any unstarted run still holding this
             // draft in memory is void now — quick-starting later must not
             // resurrect it.
             _live.value?.let { if (it.startedAtMs == null && !it.finished) resetLiveSession() }
             _screen.value = Screen.Home
+        }
+    }
+
+    /**
+     * "Share setup" on Ready to cup. Running an existing saved setup: its row
+     * exists — share that id directly (no duplicate row). Otherwise save the
+     * draft first (same-row overwrite on an edit, a new planned row otherwise)
+     * and share the saved row. Back/Done on the share screen returns to the
+     * Ready-to-cup screen this was opened from.
+     */
+    fun shareSetupFromStartCheck() {
+        val current = _screen.value
+        val source = _plannedRunSource.value
+        if (source != null) {
+            _screen.value = Screen.ShareSetup(sessionId = source, returnTo = current)
+            return
+        }
+        viewModelScope.launch {
+            val id = persistDraftAsPlanned()
+            editingPlannedSessionId = null
+            // The draft is persisted: void any unstarted run still holding it
+            // in memory (same contract as [saveSetup]).
+            _live.value?.let { if (it.startedAtMs == null && !it.finished) resetLiveSession() }
+            _screen.value = Screen.ShareSetup(sessionId = id, returnTo = current)
         }
     }
 
