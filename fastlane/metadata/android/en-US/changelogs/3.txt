@@ -1,0 +1,1 @@
+Bug fix: the in-app QR scanner ("Join a cupping") now actually opens the camera — the viewfinder used to stay black even after granting camera permission.
