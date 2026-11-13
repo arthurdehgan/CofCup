@@ -57,6 +57,17 @@ sealed interface Screen {
     data class IdentifyCups(val sessionId: String, val returnTo: Screen) : Screen
 }
 
+/**
+ * The rating screen's entry modes. The choice is session-scoped view-model
+ * state: leaving the Ratings screen and coming back keeps it, while every
+ * fresh or reset session defaults back to BY_CUP. Both modes write the same
+ * per-cup ratings — the mode is only the order of entry, never persisted.
+ */
+enum class RatingMode(val label: String) {
+    BY_CUP("By cup"),
+    BY_CATEGORY("By category"),
+}
+
 /** A session that has been set up but may not have started timing yet. */
 data class LiveSession(
     val plan: CuppingPlan,
@@ -118,6 +129,16 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
      */
     private val _myRatings = MutableStateFlow<Map<Int, CupRating>>(emptyMap())
     val myRatings: StateFlow<Map<Int, CupRating>> = _myRatings.asStateFlow()
+
+    /**
+     * Which entry mode the Ratings screen was last left in ("Rate by cup"
+     * vs "Rate by category"). Lives in the VM so the choice survives leaving
+     * and re-entering the screen during a session; [resetLiveSession],
+     * [startLiveSession] and [quickStartCupping] put it back to BY_CUP for a
+     * fresh run.
+     */
+    private val _ratingMode = MutableStateFlow(RatingMode.BY_CUP)
+    val ratingMode: StateFlow<RatingMode> = _ratingMode.asStateFlow()
 
     /**
      * In-progress blind identification for the saved row behind the current
@@ -284,6 +305,11 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         _myRatings.update {
             it + (cup to ratingFor(cup).withScore(field, value.coerceIn(1, 10)))
         }
+    }
+
+    /** Remembers the Ratings screen's entry mode for this session. */
+    fun setRatingMode(mode: RatingMode) {
+        _ratingMode.value = mode
     }
 
     /** Sets a cup's free-text notes, capped at 500 characters. */
@@ -514,6 +540,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             _elapsedMs.value = 0
             announcedStepStartSec = 0
             _myRatings.value = emptyMap()
+            _ratingMode.value = RatingMode.BY_CUP
         }
         _screen.value = Screen.LiveSession
     }
@@ -545,6 +572,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
             _elapsedMs.value = 0
             announcedStepStartSec = 0
             _myRatings.value = emptyMap()
+            _ratingMode.value = RatingMode.BY_CUP
         }
         _screen.value = Screen.LiveSession
     }
@@ -812,6 +840,7 @@ class CuppingViewModel(application: Application) : AndroidViewModel(application)
         liveBeforeSelection = null
         announcedStepStartSec = 0
         _myRatings.value = emptyMap()
+        _ratingMode.value = RatingMode.BY_CUP
         _pendingMatch.value = emptyMap()
     }
 
